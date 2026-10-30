@@ -15,14 +15,16 @@
     mut(w) { const d = Store.data().vocab; return d[w] || (d[w] = { box: 0, due: 0, seen: false, c: 0, x: 0 }); },
     seen(w) { const s = this.mut(w); if (!s.seen) { s.seen = true; s.first = Date.now(); Store.save(); } },
     grade(w, ok, kind) {
-      const s = this.mut(w), now = Date.now(); s.seen = true; s.last = now;
-      if (ok) {
+      const s = this.mut(w), now = Date.now(), before = s.box; s.seen = true; s.last = now;
+      if (kind === 'intro') { if (!s.first) s.first = now; s.due = Math.min(s.due || now, now); }   // «Not yet» на карточке — слово новое, а не «ошибка»
+      else if (ok) {
         s.c++;
-        if (kind === 'recall') { if (now >= s.due || s.box === 0) s.box = Math.min(5, s.box + 1); }
-        else if (s.box === 0) s.box = 1;
-        s.due = now + INTERVALS[s.box];
+        if (kind === 'recall') { if (now >= s.due || s.box === 0) { s.box = Math.min(5, s.box + 1); s.due = now + INTERVALS[s.box]; } }
+        else if (s.box === 0) { s.box = 1; s.due = now + INTERVALS[1]; }   // узнавание не отодвигает уже назначенное повторение
       } else { s.x++; s.box = Math.min(s.box, 1); s.due = now; s.lastWrong = now; }
-      Store.save(); document.dispatchEvent(new CustomEvent('progress-changed'));
+      Store.save();
+      document.dispatchEvent(new CustomEvent('vocab-graded', { detail: { w, ok, kind, before, after: s.box } }));
+      document.dispatchEvent(new CustomEvent('progress-changed'));
     },
     status(w) { const s = this.st(w); if (!s.seen) return 'new'; if (s.box >= MASTER_BOX) return 'mastered'; if (s.x > 0 && s.box < 3) return 'difficult'; return 'learning'; },
     due(list) { const now = Date.now(); return list.filter(v => { const s = this.st(v.w); return s.seen && s.due <= now && s.box < 5; }); },
@@ -56,14 +58,14 @@
     setTimeout(() => inp.focus(), 30);
     return h('div', { class: 'q' }, h('div', { class: 'q-prompt' }, prompt), sub ? h('div', { class: 'q-sub' }, sub) : null, inp, h('div', { class: 'row' }, go), fb);
   }
-  function choice(v, prompt, options, correctIdx, kind, done) {
+  function choice(v, prompt, options, correctIdx, kind, done, sub) {
     const fb = h('div', { class: 'q-fb', role: 'status' }); let answered = false; const btns = [];
     const next = h('button', { class: 'btn primary', hidden: true, onclick: () => done() }, 'Next →');
     options.forEach((o, i) => btns.push(h('button', { class: 'opt', onclick: () => {
       if (answered) return; answered = true; const ok = i === correctIdx; btns[i].classList.add(ok ? 'ok' : 'bad'); btns[correctIdx].classList.add('ok');
       fb.className = 'q-fb ' + (ok ? 'ok' : 'bad'); fb.textContent = ok ? 'Correct!' : 'The answer is: ' + options[correctIdx]; SRS.grade(v.w, ok, kind); done.result = ok; next.hidden = false; next.focus();
     } }, o)));
-    return h('div', { class: 'q' }, h('div', { class: 'q-prompt' }, prompt), h('div', { class: 'opts col' }, btns), fb, next);
+    return h('div', { class: 'q' }, h('div', { class: 'q-prompt' }, prompt), sub ? h('div', { class: 'q-sub' }, sub) : null, h('div', { class: 'opts col' }, btns), fb, next);
   }
   function distractors(v, pool, field) { return shuffle(pool.filter(x => x.w !== v.w)).slice(0, 3).map(x => x[field]); }
 
@@ -75,8 +77,40 @@
     toRu: (v, pool) => d => { const opts = shuffle([v.ru].concat(distractors(v, pool, 'ru'))); return choice(v, h('span', null, v.w, ' ', sayBtn(v.w)), opts, opts.indexOf(v.ru), 'recog', d); },
     toEn: (v, pool) => d => { const opts = shuffle([v.w].concat(distractors(v, pool, 'w'))); return choice(v, v.ru, opts, opts.indexOf(v.w), 'recog', d); },
     def: (v, pool) => d => { const opts = shuffle([v.w].concat(distractors(v, pool, 'w'))); return choice(v, v.def, opts, opts.indexOf(v.w), 'recog', d); },
-    build: (v) => d => builder(v, d)
+    build: (v) => d => builder(v, d),
+    // Use: выбери слово, которое подходит по смыслу и сочетаемости (новое предложение, не пример с карточки)
+    ctxChoice: (v, pool) => d => { const s = (v.ctx && v.ctx[0]) || v.ex.replace(new RegExp(v.w, 'i'), '___'); const same = pool.filter(x => x.pos === v.pos && x.w !== v.w); const opts = shuffle([v.w].concat(shuffle(same.length >= 3 ? same : pool.filter(x => x.w !== v.w)).slice(0, 3).map(x => x.w))); return choice(v, s, opts, opts.indexOf(v.w), 'recog', d, v.acc2 ? 'Which word fits? (In the sentence it may change its form.)' : 'Which word fits the sentence?'); },
+    // Use: собери пример из частей — слово в естественном контексте и порядок слов
+    sent: (v) => d => sentence(v, d)
   };
+
+  function chunks(text) {
+    let t = text.split(/\s+/).filter(Boolean);
+    while (t.length > 9) { const out = []; for (let i = 0; i < t.length; i += 2) out.push(t.slice(i, i + 2).join(' ')); t = out; }
+    return t;
+  }
+  function sentence(v, done) {
+    const parts = chunks(v.ex); let tiles = shuffle(parts.map((c, i) => ({ c, i })));
+    if (parts.length > 2 && tiles.every((t, i) => t.i === i)) tiles = tiles.slice(1).concat(tiles[0]);
+    let picked = []; let finished = false;
+    const line = h('div', { class: 'sb-line', 'aria-live': 'polite' }); const pool = h('div', { class: 'sb-pool' }); const fb = h('div', { class: 'q-fb', role: 'status' });
+    const next = h('button', { class: 'btn primary', hidden: true, onclick: () => done() }, 'Next →');
+    const key = x => x.toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-z0-9' ]/g, '').replace(/\s+/g, ' ').trim();
+    function paint() {
+      line.innerHTML = ''; picked.forEach((t, k) => line.appendChild(h('button', { class: 'sb-chip on', disabled: finished || null, onclick: () => { picked.splice(k, 1); paint(); } }, t.c)));
+      if (!picked.length) line.appendChild(h('span', { class: 'muted small' }, 'Tap the pieces in the right order…'));
+      pool.innerHTML = ''; tiles.forEach(t => { if (!picked.includes(t)) pool.appendChild(h('button', { class: 'sb-chip', disabled: finished || null, onclick: () => { picked.push(t); paint(); if (picked.length === tiles.length) finish(); } }, t.c)); });
+    }
+    function finish() {
+      finished = true; const built = picked.map(t => t.c).join(' '); const ok = key(built) === key(v.ex);
+      fb.className = 'q-fb ' + (ok ? 'ok' : 'bad'); fb.textContent = ok ? 'Correct! ' + v.ex : 'Model: “' + v.ex + '”';
+      if (ok) SRS.grade(v.w, true, 'recog');   // ошибка в порядке слов — не ошибка в слове: в Difficult Words не попадает
+      done.result = ok; line.classList.add(ok ? 'ok' : 'bad'); paint(); next.hidden = false; next.focus();
+    }
+    paint();
+    return h('div', { class: 'q' }, h('div', { class: 'q-prompt' }, h('span', { class: 'hlw' }, v.w), ' ', sayBtn(v.w)), h('div', { class: 'q-sub' }, 'Build the example sentence with “' + v.w + '” (' + v.ru + ').'), line, pool,
+      h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => { if (finished) return; picked = []; paint(); } }, '↺ Clear'), next), fb);
+  }
 
   function builder(v, done) {
     const chars = v.w.split(''); const fixed = c => c === ' ' || c === '-';
@@ -100,27 +134,79 @@
   /* ---------- Runner: one question at a time ---------- */
   function Runner(host, words, kindFor, opts) {
     opts = opts || {};
-    const qs = words.map(v => ({ v, k: kindFor(v) })); let i = 0, right = 0; const wrong = [];
+    const qs = Array.isArray(kindFor) ? kindFor.slice() : words.map(v => ({ v, k: kindFor(v) })); let i = 0, right = 0; const wrong = [];
+    const pool = opts.pool || VOCAB;
     const bar = h('div', { class: 'pbar' }, h('i')); const stage = h('div', { class: 'stage' }); const count = h('div', { class: 'muted small' });
-    host.innerHTML = ''; host.append(h('div', { class: 'run-top' }, count, bar), stage);
+    const label = opts.label ? h('span', { class: 'chip run-stage' }) : null;
+    host.innerHTML = ''; host.append(h('div', { class: 'run-top' }, count, label, bar), stage);
     function step() {
       if (i >= qs.length) return end();
       count.textContent = (i + 1) + ' / ' + qs.length; bar.firstChild.style.width = (i / qs.length * 100) + '%';
-      const q = qs[i]; const done = () => { if (done.result) right++; else wrong.push(q.v); i++; step(); };
-      stage.innerHTML = ''; stage.appendChild(KINDS[q.k](q.v, VOCAB)(done));
+      const q = qs[i]; if (label) label.textContent = opts.label(q);
+      const done = () => { if (done.result) right++; else if (!wrong.includes(q.v)) wrong.push(q.v); i++; step(); };
+      stage.innerHTML = ''; stage.appendChild(KINDS[q.k](q.v, pool)(done));
     }
     function end() {
       bar.firstChild.style.width = '100%'; const pct = Math.round(right / qs.length * 100);
       if (opts.test) { Store.data().tests.push({ t: Date.now(), name: opts.test, score: right, max: qs.length }); Store.save(); }
+      document.dispatchEvent(new CustomEvent('vocab-run-end', { detail: { right, total: qs.length, pct, test: opts.test || null, bonus: !!opts.bonus, guided: !!opts.guided } }));
       stage.innerHTML = '';
+      const again = Array.isArray(kindFor) ? null : h('button', { class: 'btn ghost', onclick: () => Runner(host, shuffle(words), kindFor, opts) }, 'Play again');
       stage.append(h('div', { class: 'run-end' }, h('div', { class: 'big-score ' + (pct >= 80 ? 'ok' : 'low') }, right + ' / ' + qs.length),
         h('p', null, opts.test ? (pct >= 80 ? '🏆 Boss defeated! (≥ 80%)' : 'Boss wins this time. You need 80%. Train the red words and try again!') : pct === 100 ? 'Perfect!' : 'Good work! Train the words you missed.'),
         wrong.length ? h('div', { class: 'wlist' }, wrong.map(v => h('span', { class: 'wtag bad' }, v.w + ' — ' + v.ru))) : null,
-        h('div', { class: 'row' }, wrong.length ? h('button', { class: 'btn primary', onclick: () => Runner(host, shuffle(wrong), kindFor, opts) }, 'Train mistakes again') : null,
-          h('button', { class: 'btn ghost', onclick: () => Runner(host, shuffle(words), kindFor, opts) }, 'Play again'),
-          h('button', { class: 'btn ghost', onclick: () => opts.onExit && opts.onExit() }, '← All modes'))));
+        h('div', { class: 'row' }, wrong.length ? h('button', { class: 'btn primary', onclick: () => Runner(host, shuffle(wrong), Array.isArray(kindFor) ? v => qs.find(q => q.v === v).k : kindFor, Object.assign({}, opts, { label: null })) }, 'Train mistakes again') : null,
+          again,
+          opts.onExit ? h('button', { class: 'btn ghost', onclick: () => opts.onExit() }, opts.exitLabel || '← All modes') : null)));
+      if (opts.onEnd) opts.onEnd(right, qs.length);
     }
     step();
+  }
+
+  /* ---------- Guided session: Learn → Recognise → Use → Recall для одного набора слов ---------- */
+  function pickGuided(words, n) {
+    const rank = v => { const s = SRS.st(v.w); const st = SRS.status(v.w); return st === 'difficult' ? 0 : (s.seen && s.due <= Date.now() && st !== 'mastered') ? 1 : st === 'new' ? 2 : st === 'learning' ? 3 : 4; };
+    return shuffle(words).sort((a, b) => rank(a) - rank(b)).slice(0, n || 8);
+  }
+  const GSTAGE = { toRu: 'Recognise', ctxChoice: 'Use', type: 'Recall', ctx: 'Recall' };
+  function Guided(host, words, onExit) {
+    const set = pickGuided(words, 8);
+    const list = [].concat(shuffle(set).map(v => ({ v, k: 'toRu' })), shuffle(set).map(v => ({ v, k: 'ctxChoice' })), shuffle(set).map(v => ({ v, k: Math.random() < .5 ? 'type' : 'ctx' })));
+    host.innerHTML = '';
+    host.append(h('div', { class: 'guided-intro' }, h('p', { class: 'muted' }, 'Keks выбрал ' + set.length + ' слов: сначала сложные и те, что пора повторить, потом новые. Каждое слово пройдёт 3 шага: узнать → употребить в контексте → вспомнить и написать.'),
+      h('div', { class: 'wlist' }, set.map(v => h('span', { class: 'wtag' }, v.w))),
+      h('div', { class: 'row center' }, h('button', { class: 'btn primary lg', onclick: () => Runner(host, set, list, { onExit, guided: true, label: q => GSTAGE[q.k] }) }, 'Start session →'))));
+  }
+
+  /* ---------- Keks Blitz: 60 секунд на узнавание ---------- */
+  function Blitz(host, words, onExit, setId) {
+    const SEC = 60; let left = SEC, score = 0, streak = 0, best = 0, timer = null, misses = [];
+    const pool = words.length >= 4 ? words : VOCAB;
+    const t = h('b', { class: 'bz-t' }, SEC + 's'); const sc = h('b', { class: 'bz-s' }, '0'); const st = h('span', { class: 'bz-k' }); const stage = h('div', { class: 'stage' });
+    const rec = () => ((Store.data().game || {}).blitz || {})[setId || 'all'] || 0;
+    function q() {
+      const v = pool[Math.floor(Math.random() * pool.length)]; const k = ['toRu', 'toEn', 'def'][Math.floor(Math.random() * 3)];
+      const field = k === 'toRu' ? 'ru' : 'w'; const opts = shuffle([v[field]].concat(distractors(v, pool, field))); const ci = opts.indexOf(v[field]);
+      const prompt = k === 'toRu' ? v.w : k === 'toEn' ? v.ru : v.def;
+      stage.innerHTML = ''; stage.append(h('div', { class: 'q' }, h('div', { class: 'q-prompt' }, prompt), h('div', { class: 'opts grid2' }, opts.map((o, i) => h('button', { class: 'opt', onclick: e => {
+        if (!timer) return; const ok = i === ci;
+        if (ok) { score += 1 + Math.min(2, Math.floor(streak / 3)); streak++; best = Math.max(best, streak); SRS.grade(v.w, true, 'recog'); }
+        else { streak = 0; if (!misses.includes(v)) misses.push(v); }
+        e.currentTarget.classList.add(ok ? 'ok' : 'bad'); sc.textContent = score; st.textContent = streak >= 3 ? '🔥 ×' + (1 + Math.min(2, Math.floor(streak / 3))) : '';
+        setTimeout(q, ok ? 180 : 450);
+      } }, o)))));
+    }
+    function end() {
+      clearInterval(timer); timer = null; const g = Store.data().game = Store.data().game || {}; g.blitz = g.blitz || {}; const prev = g.blitz[setId || 'all'] || 0; if (score > prev) g.blitz[setId || 'all'] = score; Store.save();
+      document.dispatchEvent(new CustomEvent('blitz-end', { detail: { score, best, record: score > prev } }));
+      stage.innerHTML = ''; stage.append(h('div', { class: 'run-end' }, h('div', { class: 'big-score ok' }, score), h('p', null, score > prev ? '🏆 New record!' : 'Record: ' + prev), h('p', { class: 'muted' }, 'Best streak: ' + best + '. Серия из 3 правильных подряд удваивает очки, из 6 — утраивает.'),
+        misses.length ? h('div', null, h('p', { class: 'small muted' }, 'Эти слова стоит повторить (ошибки в блице не штрафуют):'), h('div', { class: 'wlist' }, misses.map(v => h('span', { class: 'wtag bad' }, v.w + ' — ' + v.ru)))) : null,
+        h('div', { class: 'row center' }, h('button', { class: 'btn primary', onclick: () => Blitz(host, words, onExit, setId) }, 'Play again'), h('button', { class: 'btn ghost', onclick: onExit }, '← All modes'))));
+    }
+    function start() { score = 0; streak = 0; best = 0; misses = []; left = SEC; sc.textContent = '0'; t.textContent = SEC + 's'; timer = setInterval(() => { left--; t.textContent = left + 's'; t.parentNode.classList.toggle('warn', left <= 10); if (left <= 0) end(); }, 1000); q(); }
+    host.innerHTML = '';
+    host.append(h('div', { class: 'bz-bar' }, h('span', { class: 'bz-box' }, '⏱ ', t), h('span', { class: 'bz-box' }, 'Score ', sc), st, h('span', { class: 'muted small' }, 'Record: ' + rec())), stage);
+    stage.append(h('div', { class: 'run-end' }, h('p', null, '60 секунд. Узнай как можно больше слов: перевод, значение, английское слово. Серия правильных ответов умножает очки.'), h('button', { class: 'btn primary lg', onclick: start }, 'Go!')));
   }
 
   /* ---------- Board games: Matching & Memory ---------- */
@@ -162,7 +248,7 @@
         h('div', { class: 'fc-face back' }, h('div', { class: 'fc-ru' }, v.ru), h('div', { class: 'fc-def' }, v.def), h('div', { class: 'fc-ex' }, '“' + v.ex + '”')));
       wrap.innerHTML = '';
       wrap.append(h('div', { class: 'muted small' }, (i + 1) + ' / ' + list.length + ' · Stage 1 — Learn'), card,
-        h('div', { class: 'row center' }, sayBtn(v.w), h('button', { class: 'btn ghost', onclick: () => { SRS.grade(v.w, false, 'recog'); i++; show(); } }, 'Not yet'), h('button', { class: 'btn primary', onclick: () => { SRS.grade(v.w, true, 'recog'); i++; show(); } }, 'I know it ✓')));
+        h('div', { class: 'row center' }, sayBtn(v.w), h('button', { class: 'btn ghost', onclick: () => { SRS.grade(v.w, false, 'intro'); i++; show(); } }, 'Not yet'), h('button', { class: 'btn primary', onclick: () => { SRS.grade(v.w, true, 'recog'); i++; show(); } }, 'I know it ✓')));
     }
     show();
   }
@@ -181,6 +267,7 @@
 
   /* ---------- Modes catalogue ---------- */
   const MODES = [
+    { id: 'guided', stage: 'Smart session', name: 'Learn with Keks', desc: '8 words × 3 steps: recognise → use → recall. Starts with tricky words.', star: true, run: (h0, w, x) => Guided(h0, w, x) },
     { id: 'flash', stage: 'Learn', name: 'Flashcards', desc: 'Word, transcription, example. Flip the card.', run: (h0, w, x) => Flashcards(h0, w, x) },
     { id: 'match', stage: 'Recognise', name: 'Word Matching', desc: 'Match English words and translations.', run: (h0, w, x) => Matching(h0, w, x) },
     { id: 'memory', stage: 'Recognise', name: 'Memory Game', desc: 'Find the pairs.', run: (h0, w, x) => Memory(h0, w, x) },
@@ -190,9 +277,12 @@
     { id: 'type', stage: 'Recall', name: 'Type the Word', desc: 'See the translation — type the word.', run: (h0, w, x) => Runner(h0, shuffle(w), () => 'type', { onExit: x }) },
     { id: 'spell', stage: 'Recall', name: 'Spelling Challenge', desc: 'Transcription + translation → exact spelling.', run: (h0, w, x) => Runner(h0, shuffle(w), () => 'spell', { onExit: x }) },
     { id: 'ctx', stage: 'Use', name: 'Vocabulary in Context', desc: 'Complete new sentences.', run: (h0, w, x) => Runner(h0, shuffle(w), () => 'ctx', { onExit: x }) },
+    { id: 'choose', stage: 'Use', name: 'Right Word, Right Place', desc: 'Choose the word that fits a new sentence.', run: (h0, w, x) => Runner(h0, shuffle(w), () => 'ctxChoice', { onExit: x, pool: w.length >= 4 ? w : VOCAB }) },
+    { id: 'sent', stage: 'Use', name: 'Sentence Builder', desc: 'Put the example sentence together.', run: (h0, w, x) => Runner(h0, shuffle(w).slice(0, 10), () => 'sent', { onExit: x }) },
     { id: 'pers', stage: 'Personalise', name: 'Make it yours', desc: 'Write true sentences about you.', run: (h0, w, x) => Personalise(h0, w, x) },
+    { id: 'blitz', stage: 'Game', name: 'Keks Blitz', desc: '60 seconds. Streaks multiply your score.', run: (h0, w, x, name, setId) => Blitz(h0, w, x, setId) },
     { id: 'boss', stage: 'Review', name: 'Vocabulary Boss Challenge', desc: 'Mixed test. Beat the boss with 80%.', boss: true, run: (h0, w, x, name) => Runner(h0, shuffle(w).slice(0, 12), () => ['type', 'ctx', 'def', 'spell', 'toEn'][Math.floor(Math.random() * 5)], { onExit: x, test: name || 'Boss Challenge' }) }
   ];
 
-  window.Vocab = { SRS, MODES, Runner, KINDS, byW, speak, sayBtn, canSpeak, MASTER_BOX, INTERVALS };
+  window.Vocab = { SRS, MODES, Runner, Guided, Blitz, pickGuided, KINDS, byW, speak, sayBtn, canSpeak, MASTER_BOX, INTERVALS };
 })();

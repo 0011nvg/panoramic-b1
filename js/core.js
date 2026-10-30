@@ -59,7 +59,7 @@
     if (opts.strict) { return t.replace(/\s*-\s*/g, ' - ').replace(/\s+/g, ' ').replace(/\s+([?.!,;:])/g, '$1').trim(); }
     if (!opts.keepCase) t = t.toLowerCase();
     t = t.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
-    t = t.replace(/\s*([?.!,])\s*$/g, '').replace(/\s+([?.!,;:])/g, '$1');
+    t = t.replace(/\s*[?.!,]+\s*$/g, '').replace(/\s+([?.!,;:])/g, '$1');
     t = t.replace(/^"|"$/g, '');
     if (!opts.noContr) {
       t = ' ' + t;
@@ -71,14 +71,51 @@
     t = t.replace(/\s*-\s*/g, '-');
     return t;
   }
+  /* Допустимые варианты одной и той же записи (симметрично для ответа ученика и ключа):
+     's = is / has, 'd = would / had; британское -ise = американское -ize;
+     дефис = пробел (face-to-face / face to face); числа словами = цифрами (five / 5);
+     Mr. = Mr. Сама форма слова, время и порядок слов по-прежнему проверяются строго. */
+  const NUMS = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+  const NUM_RE = new RegExp('\\b(' + Object.keys(NUMS).join('|') + ')\\b', 'g');
+  function soft(t) {
+    return t.replace(/\b(mrs|mr|ms|dr)\./g, '$1')
+      .replace(/\b(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[- ](one|two|three|four|five|six|seven|eight|nine)\b/g, (m, a, b) => String(NUMS[a] + NUMS[b]))
+      .replace(NUM_RE, m => String(NUMS[m]))
+      .replace(/(\d)[ ,](\d{3})\b/g, '$1$2')
+      .replace(/\b([a-z]{3,})iz(e|es|ed|ing|ation|ations|er|ers)\b/g, '$1is$2')
+      .replace(/\b([a-z]{2,})yz(e|es|ed|ing)\b/g, '$1ys$2')
+      .replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function variants(s, opts) {
+    opts = opts || {};
+    const n = norm(s, opts);
+    if (!n || opts.strict || opts.noContr) return n ? [n] : [];
+    const raw = norm(s, Object.assign({}, opts, { noContr: true }));
+    const out = new Set([n]);
+    const possessiveOnly = /^[a-z]+(['’]s|s['’])$/.test(raw); // «boy’s» в упражнении на притяжательный падеж ≠ «boy is»
+    const sOpts = possessiveOnly || !/'s\b/.test(raw) ? [null] : [null, ' is', ' has'];
+    const dOpts = /'d\b/.test(raw) ? [' would', ' had'] : [null];
+    sOpts.forEach(sv => dOpts.forEach(dv => {
+      let t = raw;
+      if (sv) t = t.replace(/'s\b/g, sv);
+      if (dv) t = t.replace(/'d\b/g, dv);
+      const v = norm(t, opts); if (v) out.add(v);
+    }));
+    [...out].forEach(v => { const x = soft(v); if (x) out.add(x); });
+    return [...out];
+  }
   function matches(input, accepted, opts) {
-    const n = norm(input, opts);
-    if (!n) return false;
-    return (accepted || []).some(a => norm(a, opts) === n);
+    const vi = new Set(variants(input, opts));
+    if (!vi.size) return false;
+    return (accepted || []).some(a => variants(a, opts).some(x => vi.has(x)));
   }
   // Levenshtein — used only to produce "almost" feedback, never to accept
   function lev(a, b) { a = a || ''; b = b || ''; const m = []; for (let i = 0; i <= b.length; i++) m[i] = [i]; for (let j = 0; j <= a.length; j++) m[0][j] = j; for (let i = 1; i <= b.length; i++) for (let j = 1; j <= a.length; j++) m[i][j] = b[i - 1] === a[j - 1] ? m[i - 1][j - 1] : Math.min(m[i - 1][j - 1] + 1, m[i][j - 1] + 1, m[i - 1][j] + 1); return m[b.length][a.length]; }
-  function closeTo(input, accepted) { const n = norm(input); return (accepted || []).some(a => { const x = norm(a); return n && n !== x && lev(n, x) <= Math.max(1, Math.floor(x.length / 8)); }); }
+  const noApos = s => norm(s, { noContr: true }).replace(/'/g, '');
+  function closeTo(input, accepted) {
+    const n = norm(input); if (!n) return false;
+    return (accepted || []).some(a => { const x = norm(a); if (n === x) return false; if (noApos(input) === noApos(a)) return true; return lev(n, x) <= Math.max(1, Math.floor(x.length / 8)); });
+  }
 
   /* ---------- DOM helpers ---------- */
   function h(tag, attrs, ...kids) {
@@ -134,5 +171,5 @@
   function allItems(lessonId) { const L = LESSONS[lessonId]; const out = []; L.sections.forEach(s => s.items.forEach(it => out.push(Object.assign({ _section: s.id }, it)))); return out; }
   function gradable(it) { return !['discuss', 'review', 'rank', 'interview', 'writing', 'reference', 'checklist', 'scores'].includes(it.type); }
 
-  window.Core = { LS, Profiles, Store, norm, matches, closeTo, h, esc, md, shuffle, toast, confirmBox, promptBox, download, Tutor, allItems, gradable };
+  window.Core = { LS, Profiles, Store, norm, variants, matches, closeTo, h, esc, md, shuffle, toast, confirmBox, promptBox, download, Tutor, allItems, gradable };
 })();

@@ -16,17 +16,22 @@
 ```
 index.html            оболочка
 css/app.css           дизайн (палитра #F7F4ED, #3D3BFF, #FF4FA3, #FFD400, #FF7A00)
+css/play.css          игровой слой, дашборд, Кекс, режим доски
 js/core.js            хранилище, профили, проверка ответов
 js/data-unit0.js      Entry Book: 12 уроков E1–E12 (u0-1 … u0-12), ключи, транскрипты
 js/data-unitN.js      содержание модуля N (задания, ключи, аудио, транскрипты)
 js/data-vocab*.js     словарь (Unit 1 / Units 2–3 / Entry Book — data-vocab0.js)
 js/exercises.js       движок упражнений
-js/vocab.js           Vocabulary Lab + интервальное повторение
+js/vocab.js           Vocabulary Lab + интервальное повторение (Learn with Keks, Sentence Builder, Blitz…)
+js/game.js            XP, уровни, звёзды, миссии уроков, значки, серия дней
+js/keks.js            Кекс-компаньон: подсказки, реакции, бонус-раунд, экран «Lesson complete»
 js/app.js             страницы и навигация
-assets/               шрифты (OFL), Кекс, favicon
+assets/               шрифты (OFL), Кекс (keks.webp и аватар keks-face.webp), favicon
 audio/                аудио Student Book и Workbook (NN.mp3)
 audio/entry/          аудио Entry Book (E01.mp3 …)
-tests/qa.js           автотест Playwright (556 проверок)
+tests/qa.js           автотест Playwright (579 проверок)
+tests/answers.js      модульные тесты проверки ответов (1629)
+tests/inventory.js    снимок всего содержания для сравнения до/после
 tests/entry-check.js  быстрая проверка уроков: ключ → 100 %, 375 px, консоль
 tests/coverage.js     генерирует COVERAGE.md из данных
 ```
@@ -59,3 +64,10 @@ tests/coverage.js     генерирует COVERAGE.md из данных
 python3 -m http.server 8765 &
 node tests/qa.js http://localhost:8765/
 ```
+
+## Игровой слой и Кекс
+Подробно — в `AUDIT.md`. Коротко: звёзды за каждое задание, XP только за учебные действия, 3 миссии в каждом уроке, 12 значков, экран завершения урока. Кекс объясняет новые типы заданий, реагирует на результат, предлагает бонус-раунд по сложным словам. Нажми на кота — «что дальше». «Тихий режим» — в его меню.
+
+## Для преподавателя
+- **Поиск упражнения:** кнопка 🔍 в шапке или клавиша «/». «13 4» — с. 13 упр. 4; можно искать словами.
+- **Board mode** (кнопка с монитором): крупный шрифт для интерактивной доски, XP, звёзды и Кекс скрыты.

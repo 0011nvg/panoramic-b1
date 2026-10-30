@@ -156,7 +156,7 @@ const results = []; const ok = (name, cond, info) => { results.push([cond ? 'PAS
   // simulate time travel: 3 spaced sessions → mastered
   const mastered = await page.evaluate(() => { const w = 'fountain'; const s = Vocab.SRS.mut(w); for (let k = 0; k < 4; k++) { s.due = 0; Vocab.SRS.grade(w, true, 'recall'); } return Vocab.SRS.status(w); });
   ok('Spaced correct recalls → mastered', mastered === 'mastered', mastered);
-  for (const m of ['flash', 'match', 'memory', 'trans', 'missing', 'build', 'spell', 'ctx', 'pers', 'boss']) {
+  for (const m of ['guided', 'flash', 'match', 'memory', 'trans', 'missing', 'build', 'spell', 'ctx', 'choose', 'sent', 'pers', 'blitz', 'boss']) {
     await page.goto(BASE + '#/vocab/u1-1/' + m); await page.waitForTimeout(200);
     const has = await page.$eval('.run', e => e.children.length > 0); ok('Mode renders: ' + m, has);
   }
@@ -171,6 +171,60 @@ const results = []; const ok = (name, cond, info) => { results.push([cond ? 'PAS
   const ru = await page.$eval('.q-prompt', e => e.textContent); const target = V.find(x => x[0] === ru)[1];
   for (const ch of target.replace(/[ -]/g, '')) { const tiles = await page.$$('.tile:not([disabled])'); for (const t of tiles) { if ((await t.textContent()) === ch) { await t.click(); break; } } }
   ok('Word Builder builds ' + target, /Correct/.test(await page.$eval('.q-fb', e => e.textContent)));
+
+  /* ---------- new vocabulary modes ---------- */
+  await page.goto(BASE + '#/vocab/u1-1/sent'); await page.waitForSelector('.sb-chip');
+  const sw = await page.$eval('.q-prompt .hlw', e => e.textContent); const ex = await page.evaluate(w => VOCAB.find(v => v.w === w).ex, sw);
+  const want = await page.evaluate(t => { let p = t.split(/\s+/).filter(Boolean); while (p.length > 9) { const o = []; for (let i = 0; i < p.length; i += 2) o.push(p.slice(i, i + 2).join(' ')); p = o; } return p; }, ex);
+  for (const c of want) { const ch = await page.$$('.sb-pool .sb-chip'); for (const b of ch) if ((await b.textContent()) === c) { await b.click(); break; } }
+  ok('Sentence Builder accepts the example in order', /Correct/.test(await page.$eval('.q-fb', e => e.textContent)), sw);
+  await page.goto(BASE + '#/vocab/u1-1/choose'); await page.waitForSelector('.q .opt');
+  const cq = await page.$eval('.q-prompt', e => e.textContent); const cw = await page.evaluate(q => { const v = VOCAB.find(v => v.lesson === 'u1-1' && (v.ctx && v.ctx[0]) === q); return v && v.w; }, cq);
+  if (cw) { await page.click(`.q .opt:text-is("${cw}")`); ok('Right Word, Right Place: correct option accepted', /Correct/.test(await page.$eval('.q-fb', e => e.textContent))); }
+  await page.goto(BASE + '#/vocab/u1-1/guided'); await page.waitForSelector('.guided-intro');
+  await page.click('.guided-intro .btn.primary'); await page.waitForSelector('.run-stage');
+  ok('Guided session: 24 steps with stage label', /\/ 24/.test(await page.$eval('.run-top', e => e.textContent)) && /Recognise/.test(await page.$eval('.run-stage', e => e.textContent)));
+
+  /* ---------- game layer, Keks, teacher tools ---------- */
+  const mainProfile = await page.evaluate(() => { const id = Core.Profiles.currentId(); Core.Profiles.add('Gamer'); Core.Store._id = null; Core.LS.set('keksQuiet', false); return id; });
+  await page.goto(BASE + '#/lesson/u1-1'); await page.waitForSelector('#ex-u11-2');
+  const xp0 = await page.evaluate(() => Game.G().xp);
+  const k2 = await page.$('#ex-u11-2'); await k2.scrollIntoViewIfNeeded(); await (await k2.$('input.gap')).focus(); await page.waitForTimeout(150);
+  ok('Keks explains a new exercise type once', /Как это работает/.test(await page.$eval('.kk-bubble', e => e.hidden ? '' : e.textContent)));
+  await (await k2.$('button:has-text("Показать ключ")')).click(); await (await k2.$('button:has-text("Check Answers")')).click(); await page.waitForTimeout(150);
+  const xp1 = await page.evaluate(() => Game.G().xp);
+  ok('First 100% check gives XP and 3 stars', xp1 > xp0 && (await k2.$$('.ex-head .ex-stars i.on')).length === 3, xp0 + '→' + xp1);
+  ok('Feedback has no "null" text', !/null/.test(await k2.$eval('.ex-fb', e => e.textContent)), await k2.$eval('.ex-fb', e => e.textContent));
+  await (await k2.$('button:has-text("Check Answers")')).click(); await page.waitForTimeout(100);
+  ok('Re-checking a solved exercise gives no extra XP', (await page.evaluate(() => Game.G().xp)) === xp1);
+  // wrong then fixed → bonus + "fixed"
+  const k4 = await page.$('#ex-u11-4'); await k4.scrollIntoViewIfNeeded(); await (await k4.$('button:has-text("Check Answers")')).click(); await page.waitForTimeout(100);
+  ok('Mistake: exercise appears in Revision fix-it queue', await page.evaluate(() => Keks.mistakes().some(x => x[1].id === 'u11-4')));
+  await (await k4.$('button:has-text("Показать ключ")')).click(); await (await k4.$('button:has-text("Check Answers")')).click(); await page.waitForTimeout(100);
+  ok('Fixed to 100% → counted as fixed, leaves the queue', await page.evaluate(() => Game.G().fixed === 1 && !Keks.mistakes().some(x => x[1].id === 'u11-4')));
+  ok('Missions panel shows 3 missions', (await page.$$('.missions .ms')).length === 3);
+  ok('Badge "First step" awarded', await page.evaluate(() => !!Game.G().badges.first));
+  // lesson complete → results screen
+  await page.evaluate(() => { Core.allItems('u1-1').filter(it => it.core !== false).forEach(it => Core.Store.markDone(it.id)); document.dispatchEvent(new CustomEvent('progress-changed')); });
+  await page.waitForSelector('.modal.finish', { timeout: 3000 }).catch(() => {});
+  ok('Lesson complete → results screen with next lesson', !!(await page.$('.modal.finish a[href="#/lesson/u1-2"]')));
+  await page.keyboard.press('Escape');
+  // bonus round
+  await page.evaluate(() => VOCAB.filter(v => v.lesson === 'u1-1').slice(0, 5).forEach(v => Vocab.SRS.grade(v.w, false, 'recall')));
+  await page.evaluate(() => Keks.bonus()); await page.waitForSelector('.modal.bonus .q');
+  ok('Keks bonus round opens with 5 words', /\/ 5/.test(await page.$eval('.modal.bonus .run-top', e => e.textContent)));
+  await page.click('.modal.bonus .kk-x');
+  // teacher: find + board mode
+  ok('Find "12 4" → 1.1 Ex. 4', await page.evaluate(() => App.search('12 4').some(([id, it]) => it.id === 'u11-4')));
+  ok('Find by words "question tags"', await page.evaluate(() => App.search('question tags').length > 0));
+  await page.keyboard.press('/'); ok('"/" opens exercise search', !!(await page.$('.find-ov'))); await page.keyboard.press('Escape');
+  await page.click('.icobtn[aria-label="Режим доски"]'); await page.waitForTimeout(100);
+  ok('Board mode hides Keks and game layer', await page.evaluate(() => getComputedStyle(document.getElementById('keks')).display === 'none' && getComputedStyle(document.querySelector('.missions')).display === 'none'));
+  await page.click('.icobtn[aria-label="Режим доски"]');
+  await page.goto(BASE + '#/'); await page.waitForSelector('.today');
+  ok('Home dashboard: 4 Today cards', (await page.$$('.today .tcard2')).length === 4);
+  await page.goto(BASE + '#/progress'); ok('Progress: 12 badges listed', (await page.$$('.badges .badge')).length === 12);
+  await page.evaluate(id => { const g = Core.Profiles.currentId(); Core.Profiles.switchTo(id); Core.Profiles.remove(g); Core.Store._id = null; }, mainProfile);
 
   /* ---------- profiles, export, reset ---------- */
   await page.goto(BASE + '#/progress'); await page.waitForSelector('.wtable');

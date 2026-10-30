@@ -33,15 +33,21 @@
   }
 
   /* ---------- Generic card wrapper ---------- */
+  function Stars(n) { return [1, 2, 3].map(i => h('i', { class: i <= n ? 'on' : null, 'aria-hidden': 'true' }, '★')); }
   function Card(it, body, api) {
     const isBook = it.source !== 'added';
+    const G = window.Game; const starable = !!(G && G.starable(it));
+    const starsEl = starable ? h('span', { class: 'ex-stars', title: '★ ≥ 50 % · ★★ ≥ 80 % · ★★★ = 100 % (лучшая попытка)' }) : null;
+    const paintStars = () => { if (!starsEl) return; const n = G.stars(it.id); starsEl.innerHTML = ''; starsEl.append(...Stars(n)); starsEl.setAttribute('aria-label', n + ' of 3 stars'); starsEl.classList.toggle('full', n === 3); };
+    paintStars();
     const head = h('header', { class: 'ex-head' },
       h('div', { class: 'ex-badges' },
         isBook ? h('span', { class: 'ex-num', title: 'Номер в учебнике' }, it.num) : h('span', { class: 'ex-num added', title: 'Добавлено, не из учебника' }, it.oge ? 'OGE' : '+'),
         isBook ? h('span', { class: 'chip pg' }, 'p.' + it.page) : h('span', { class: 'chip added' }, it.oge === 'practice' ? 'OGE Exam Practice' : it.oge === 'builder' ? 'Exam Skills Builder' : 'Добавлено'),
         (it.tags || []).map(t => h('span', { class: 'chip tag ' + (TAGCLR[t] || 'ink') }, t)),
         h('span', { class: 'chip ' + (it.core === false ? 'extra' : 'core') }, it.core === false ? 'Extra' : 'Core'),
-        it.type === 'discuss' || it.type === 'rank' || it.type === 'interview' ? h('span', { class: 'chip turn' }, 'Student turn') : null),
+        it.type === 'discuss' || it.type === 'rank' || it.type === 'interview' ? h('span', { class: 'chip turn' }, 'Student turn') : null,
+        starsEl),
       it.title ? h('h3', { class: 'ex-title' }, it.title) : null,
       h('p', { class: 'ex-instr', html: md(it.instruction || '') }),
       it.adapted ? h('p', { class: 'ex-adapt' }, h('b', null, 'Адаптация для 1:1. '), it.adapted) : null,
@@ -62,7 +68,7 @@
     if (it.explanation) add('Show Explanation', 'ghost', () => { explBox.hidden = !explBox.hidden; explBox.textContent = it.explanation; });
     if (api.reset) add('Reset Exercise', 'ghost subtle', async () => { if (await Core.confirmBox('Сбросить упражнение?', 'Ответы этого упражнения будут очищены. Результаты прошлых попыток останутся в истории.', 'Сбросить')) { api.reset(); fb.textContent = ''; fb.className = 'ex-fb'; Store.saveState(it.id, null); } });
     if (api.key) add('Показать ключ', 'ghost tutor-only', () => api.key(), 'Только в режиме преподавателя');
-    if (api.done) add(api.doneLabel || 'Mark as done', 'ghost', () => { api.done(); paintDone(); toast('Отмечено как выполненное'); });
+    if (api.done) add(api.doneLabel || 'Mark as done', 'ghost', () => { const was = !!Store.ex(it.id).done; api.done(); paintDone(); const now = !!Store.ex(it.id).done; const xp = now && G ? G.exerciseDone(it, !was) : 0; toast(now ? 'Отмечено как выполненное' + (xp ? ' · +' + xp + ' XP' : '') : 'Отмечено как выполненное'); });
 
     function show(r) {
       if (!r) return;
@@ -70,9 +76,16 @@
       const msg = pct === 100 ? 'Excellent! Everything is correct.' : pct >= 70 ? 'Good job! Correct the red answers and press Check again.' : 'Keep going! Use “Need a Hint?” and try again.';
       fb.className = 'ex-fb show ' + (pct === 100 ? 'ok' : pct >= 70 ? 'mid' : 'low');
       fb.innerHTML = '';
-      fb.append(h('span', { class: 'score' }, r.score + ' / ' + r.max), h('span', { class: 'pct' }, pct + '%'), h('span', null, msg), r.note ? h('span', { class: 'muted' }, ' ' + r.note) : null);
+      const prevBest = Store.ex(it.id).best;
       Store.record(it.id, r.score, r.max);
-      paintDone();
+      const g = G ? G.exerciseChecked(it, r, prevBest) : null;
+      const praise = g && g.fixed ? 'Fixed! Mistakes turned into 100%.' : msg;
+      fb.append(...[h('span', { class: 'score' }, r.score + ' / ' + r.max), h('span', { class: 'pct' }, pct + '%'), h('span', null, praise), r.note ? h('span', { class: 'muted' }, ' ' + r.note) : null,
+        g && (g.xp || starable) ? h('span', { class: 'reward' }, starable ? h('span', { class: 'rw-stars' }, Stars(g.stars)) : null, g.xp ? h('b', { class: 'rw-xp' }, '+' + g.xp + ' XP') : null) : null].filter(Boolean));   // append(null) печатал бы «null»
+      if (pct < 100 && it.hint && hintBox.hidden) fb.append(h('button', { class: 'linkbtn', onclick: () => { hintBox.hidden = false; hintBox.textContent = '💡 ' + it.hint; } }, '💡 Hint'));
+      paintDone(); paintStars();
+      if (window.innerWidth < 640 && fb.scrollIntoView) fb.scrollIntoView({ block: 'center', behavior: 'smooth' });   // на телефоне результат не уходит под клавиатуру и реплику Кекса
+      if (pct === 100) { card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop'); }
       document.dispatchEvent(new CustomEvent('progress-changed'));
     }
 
@@ -92,6 +105,7 @@
     const card = h('article', { class: 'ex', id: 'ex-' + it.id, 'data-id': it.id, 'data-type': it.type }, head, it.type !== 'listen' && it.audio ? AudioPlayer(it.audio) : null, body, tx, links, hintBox, explBox, tools, fb, follow, extra,
       h('div', { class: 'ex-foot' }, ask, h('div', { class: 'tutor-only tc-wrap' }, tcomment)));
 
+    card.addEventListener('focusin', () => { if (card._seen) return; card._seen = true; document.dispatchEvent(new CustomEvent('exercise-focus', { detail: { id: it.id, type: it.type === 'listen' ? (it.inner || {}).type || 'listen' : it.type, listen: it.type === 'listen', hint: !!it.hint } })); });
     function paintDone() { const e = Store.ex(it.id); card.classList.toggle('is-done', !!e.done); }
     paintDone();
     card._show = show;
