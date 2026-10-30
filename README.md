@@ -1,6 +1,6 @@
 # Interactive English Studio — Panoramic B1
 
-Готовы **Units 1–3** целиком (Student Book, Grammar Reference & Practice, Workbook). Ключи и аудиоскрипты взяты из Teacher’s Guide.
+Готовы **Entry Book** (входной модуль A2 перед Unit 1, 12 юнитов, с. 1–48) и **Units 1–3** целиком (Student Book, Grammar Reference & Practice, Workbook). Ключи и аудиоскрипты Units 1–3 взяты из Teacher’s Guide, Entry Book — из Entry Book Answer Key и B1 Entry Book Audio scripts.
 
 Платформа для индивидуальных занятий (1 ученик + 1 преподаватель). Статический сайт без сервера и без ключей API — готов к GitHub Pages.
 
@@ -17,14 +17,17 @@
 index.html            оболочка
 css/app.css           дизайн (палитра #F7F4ED, #3D3BFF, #FF4FA3, #FFD400, #FF7A00)
 js/core.js            хранилище, профили, проверка ответов
+js/data-unit0.js      Entry Book: 12 уроков E1–E12 (u0-1 … u0-12), ключи, транскрипты
 js/data-unitN.js      содержание модуля N (задания, ключи, аудио, транскрипты)
-js/data-vocab*.js     словарь (Unit 1 / Units 2–3)
+js/data-vocab*.js     словарь (Unit 1 / Units 2–3 / Entry Book — data-vocab0.js)
 js/exercises.js       движок упражнений
 js/vocab.js           Vocabulary Lab + интервальное повторение
 js/app.js             страницы и навигация
 assets/               шрифты (OFL), Кекс, favicon
-audio/                сюда кладутся аудиофайлы
-tests/qa.js           автотест Playwright (253 проверки)
+audio/                аудио Student Book и Workbook (NN.mp3)
+audio/entry/          аудио Entry Book (E01.mp3 …)
+tests/qa.js           автотест Playwright (546 проверок)
+tests/entry-check.js  быстрая проверка уроков: ключ → 100 %, 375 px, консоль
 tests/coverage.js     генерирует COVERAGE.md из данных
 ```
 
@@ -33,6 +36,9 @@ tests/coverage.js     генерирует COVERAGE.md из данных
 Для заданий без ключа (`answers: null`) сейчас преподаватель ставит ✓/✗. Когда появится ключ:
 - MCQ: замените `answers: null` на ничего и добавьте `a: <индекс>` каждому вопросу;
 - Gaps: замените `{n:1}` на `{a:['ответ','вариант']}` и уберите `answers: null`.
+
+## Entry Book
+Входной модуль стоит первым в списке (BOOK.units.unshift) и называется «Entry», уроки — E1…E12. Каждый урок = один юнит Entry Book (4 страницы), разделы в порядке книги (Reading, Vocabulary, Grammar, Listening…). Задания записаны компактно: `[ответ|вариант]` — ввод, `{a/b*/c}` — выбор (звёздочка = верный), `[=пример]`, `[?]` — свободный ответ. Картинки книги заменены описаниями с пометкой «📷 … — в Entry Book с. N».
 
 ## Как добавить следующий модуль
 Создайте `js/data-unitN.js` по образцу `data-unit3.js` (`BOOK.units.push({...})` + `LESSONS[...]`), подключите его в `index.html` после остальных data-файлов, слова добавьте через `VOCAB.push(...)` с `lesson: '<id урока>'`.

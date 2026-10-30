@@ -7,7 +7,8 @@
   const ALL = () => BOOK.units.flatMap(u => u.lessons);
   const UNIT = { get lessons() { return ALL(); } };
   const unitOf = id => BOOK.units.find(u => u.lessons.includes(id));
-  const lname = id => { const L = LESSONS[id]; const u = unitOf(id); return (['GR', 'WB'].includes(L.code) || L.kicker === 'Unit opener' ? 'U' + u.num + ' ' : '') + (L.kicker === 'Unit opener' ? 'Opener' : L.code); };
+  const ulab = u => u.label || 'Unit ' + u.num;
+  const lname = id => { const L = LESSONS[id]; const u = unitOf(id); return u.entry ? L.code : (['GR', 'WB'].includes(L.code) || L.kicker === 'Unit opener' ? 'U' + u.num + ' ' : '') + (L.kicker === 'Unit opener' ? 'Opener' : L.code); };
   const unitWordsOf = uid => VOCAB.filter(v => LESSONS[v.lesson] && LESSONS[v.lesson].unit === uid);
   const lessonWords = id => VOCAB.filter(v => v.lesson === id);
   const unitWords = () => VOCAB.slice();
@@ -44,7 +45,7 @@
           h('h1', null, 'Learn it. ', h('span', { class: 'hl-pink' }, 'Say it.'), ' ', h('span', { class: 'hl-blue' }, 'Keep it.')),
           h('p', { class: 'lead' }, 'Все упражнения учебника — интерактивно, с проверкой. Словарный тренажёр с интервальным повторением и подготовка к ОГЭ по теме урока.'),
           h('div', { class: 'row' }, last ? h('a', { class: 'btn primary lg', href: last }, 'Continue lesson →') : h('a', { class: 'btn primary lg', href: '#/lesson/u1-opener' }, 'Start Unit 1 →'),
-            h('a', { class: 'btn ghost lg', href: '#/vocab' }, 'Vocabulary Lab'))),
+            h('a', { class: 'btn ghost lg', href: '#/lesson/u0-1' }, 'Entry: A2 revision'), h('a', { class: 'btn ghost lg', href: '#/vocab' }, 'Vocabulary Lab'))),
         h('figure', { class: 'hero-art' }, h('div', { class: 'blob b1' }), h('div', { class: 'blob b2' }), h('img', { src: 'assets/keks.webp', alt: 'Кекс — кот-талисман платформы', width: 720, height: 630 }),
           h('figcaption', { class: 'keks-say' }, due ? 'Мяу! ' + due + ' слов ждут повторения.' : 'Мяу! Начнём?'))),
       h('section', { class: 'stats-strip' },
@@ -91,6 +92,7 @@
       }
       if (s.id === 'book' && words.length) { body.appendChild(TrainSection(id)); navItems.push(['train', 'Vocabulary Training']); }
     });
+    if (words.length && !body.querySelector('#sec-train')) { body.appendChild(TrainSection(id)); navItems.push(['train', 'Vocabulary Training']); }
     if (words.length && !body.querySelector('#sec-vocab')) { body.prepend(VocabSection(id, words)); navItems.unshift(['vocab', 'Vocabulary']); }
     // reorder nav to page order
     const order = [...body.children].map(c => c.id.replace('sec-', ''));
@@ -104,7 +106,7 @@
       h('a', { class: 'back', href: '#/' }, '← All lessons'),
       h('header', { class: 'lhero' },
         h('div', { class: 'lh-code' }, L.code),
-        h('div', null, h('div', { class: 'eyebrow' }, 'Unit ' + unitOf(id).num + ' · ' + L.kicker + ' · p.' + L.pages + (L.sdg ? ' · SDG ' + L.sdg : '')), h('h1', null, L.title), h('p', { class: 'lead' }, L.goal),
+        h('div', null, h('div', { class: 'eyebrow' }, ulab(unitOf(id)) + ' · ' + L.kicker + ' · p.' + L.pages + (L.sdg ? ' · SDG ' + L.sdg : '')), h('h1', null, L.title), h('p', { class: 'lead' }, L.goal),
           h('div', { class: 'lh-meta' }, h('span', { class: 'chip' }, '⏱ ' + L.time), L.split ? h('span', { class: 'chip tutor-only' }, L.split) : null))),
       h('div', { class: 'lnav' }, h('div', { class: 'lnav-in' }, navItems.map(([sid, t]) => h('a', { href: '#/lesson/' + id + '/@' + sid }, t)), coreBtn), h('div', { class: 'lnav-p' }, pb, pl)),
       body,
@@ -137,7 +139,7 @@
 
   /* ---------- Vocabulary Lab ---------- */
   const SETS = () => [['all', 'All words', unitWords(), 'tab']]
-    .concat(BOOK.units.map(u => [u.id, 'Unit ' + u.num, unitWordsOf(u.id), 'tab']))
+    .concat(BOOK.units.map(u => [u.id, ulab(u), unitWordsOf(u.id), 'tab']))
     .concat(ALL().filter(id => lessonWords(id).length).map(id => [id, lname(id) + ' ' + LESSONS[id].title, lessonWords(id), 'lesson']))
     .concat([['due', 'Due for review', SRS.due(unitWords()), 'tab'], ['hard', 'Difficult Words', SRS.difficult(unitWords()), 'tab']]);
   function VocabLab(setId, modeId) {
@@ -175,7 +177,7 @@
       h('div', { class: 'rev-grid' },
         h('div', { class: 'rcard' }, h('b', { class: 'rn' }, due.length), h('h3', null, 'Words due today'), h('p', { class: 'muted' }, 'Интервальное повторение: слово возвращается через 10 мин, 1, 3, 7 и 16 дней.'), h('button', { class: 'btn primary', disabled: !due.length || null, onclick: () => Runner(host, shuffle(due), () => ['type', 'ctx', 'spell'][Math.floor(Math.random() * 3)], { onExit: () => route() }) }, 'Start review')),
         h('div', { class: 'rcard' }, h('b', { class: 'rn' }, hard.length), h('h3', null, 'Difficult Words'), h('p', { class: 'muted' }, 'Только слова, в которых были ошибки.'), h('button', { class: 'btn primary', disabled: !hard.length || null, onclick: () => Runner(host, shuffle(hard), () => ['type', 'ctx', 'build'][Math.floor(Math.random() * 3)], { onExit: () => route() }) }, 'Train mistakes')),
-        h('div', { class: 'rcard' }, h('b', { class: 'rn' }, words.length), h('h3', null, 'Unit vocabulary tests'), h('p', { class: 'muted' }, 'Итоговый тест модуля: 12 случайных слов, смешанные форматы. Результат сохраняется.'), h('div', { class: 'row' }, BOOK.units.map(u => h('button', { class: 'btn primary sm', onclick: () => Runner(host, shuffle(unitWordsOf(u.id)).slice(0, 12), () => ['type', 'ctx', 'def', 'spell', 'toEn'][Math.floor(Math.random() * 5)], { test: 'Unit ' + u.num + ' vocabulary test', onExit: () => route() }) }, 'Unit ' + u.num))))),
+        h('div', { class: 'rcard' }, h('b', { class: 'rn' }, words.length), h('h3', null, 'Unit vocabulary tests'), h('p', { class: 'muted' }, 'Итоговый тест модуля: 12 случайных слов, смешанные форматы. Результат сохраняется.'), h('div', { class: 'row' }, BOOK.units.map(u => h('button', { class: 'btn primary sm', onclick: () => Runner(host, shuffle(unitWordsOf(u.id)).slice(0, 12), () => ['type', 'ctx', 'def', 'spell', 'toEn'][Math.floor(Math.random() * 5)], { test: ulab(u) + ' vocabulary test', onExit: () => route() }) }, ulab(u)))))),
       host,
       h('div', { class: 'sec-h' }, h('h2', null, 'Exercises with mistakes')),
       errs.length ? h('ul', { class: 'errlist' }, errs.map(([id, it, e]) => h('li', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, lname(id) + ' · ' + (it.source === 'added' ? it.title : 'Ex. ' + it.num + ' p.' + it.page)), h('span', { class: 'pill difficult' }, e.score + ' / ' + e.max)))) : h('p', { class: 'muted' }, 'Нет упражнений с ошибками. Выполни упражнения урока — сюда попадут те, где есть ошибки.'));
@@ -240,7 +242,7 @@
     const how = it => { const t = it.type === 'listen' ? it.inner.type : it.type; return t === 'open' ? 'Преподаватель ✓/✗ по ключу' : ['discuss', 'rank', 'checklist'].includes(t) ? 'Устно / отметка' : t === 'writing' ? (it.min ? 'Формальные признаки + преподаватель' : 'Преподаватель') : t === 'scores' ? 'Самооценка' : t === 'reference' ? 'Отметка «прочитано»' : 'Автопроверка'; };
     const typeName = { gaps: 'Gaps / select', listen: 'Audio/video + task', mcq: 'Choice', inline: 'Choose the alternative', underline: 'Tap to underline + tense', rulebox: 'Grammar box', match: 'Matching', order: 'Write the sentence', rank: 'Ranking 1–3', discuss: 'Speaking prompts', open: 'Open answers + key', tapfind: 'Tap to underline', multi: 'Tick all', checklist: 'Checklist', scores: 'Scores 0–10', reference: 'Read / listen box', writing: 'Writing', interview: 'Timed speaking' };
     return h('div', { class: 'page' }, h('div', { class: 'eyebrow' }, 'Coverage'), h('h1', null, 'Учебник → сайт'),
-      h('p', { class: 'muted' }, 'Все задания модулей ' + BOOK.units.map(u => u.num).join(', ') + ' (Student Book, Grammar Reference & Practice, Workbook) в исходной нумерации: ' + rows.length + ' заданий. Добавленные материалы (warm-up, OGE, review) в таблицу не входят и на сайте помечены «Добавлено».'),
+      h('p', { class: 'muted' }, 'Все задания модулей ' + BOOK.units.map(u => u.label || u.num).join(', ') + ' (Entry Book, Student Book, Grammar Reference & Practice, Workbook) в исходной нумерации: ' + rows.length + ' заданий. Добавленные материалы (warm-up, OGE, review) в таблицу не входят и на сайте помечены «Добавлено».'),
       h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable' }, h('thead', null, h('tr', null, ['Page', 'Ex.', 'Site section', 'Format', 'Status', 'Check'].map(t => h('th', null, t)))),
         h('tbody', null, rows.map(([id, it]) => h('tr', null, h('td', null, it.page), h('td', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, it.num)), h('td', null, lname(id) + ' ' + LESSONS[id].title), h('td', null, typeName[it.type] || it.type), h('td', null, it.audio && !it.audio.file ? h('span', { class: 'pill difficult' }, 'ждёт аудио ' + it.audio.track) : h('span', { class: 'pill mastered' }, 'готово')), h('td', null, how(it))))))),
       h('div', { class: 'sec-h' }, h('h2', null, 'Не извлечено / не предоставлено')),
