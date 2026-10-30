@@ -35,12 +35,25 @@
 | 26 | 3.4 Ex.2 p.38 | audio/26.mp3 |
 | 27 | 3.5 Ex.2 p.39 | audio/27.mp3 |
 | 28 | 3.5 Ex.3 p.39 (та же запись, что 27) | audio/27.mp3 |
+| 131 | WB Unit 1 Reading Ex.2 p.159 | audio/131.mp3 |
+| 132 | WB Unit 1 Listening Ex.2 p.160 | audio/132.mp3 |
+| 133 | WB Unit 1 Listening Ex.3 p.160 | audio/133.mp3 |
+| 134 | WB Unit 1 Listening Ex.4 p.160 | audio/134.mp3 |
+| 135 | WB Unit 2 Reading p.165 | audio/135.mp3 |
+| 136 | WB Unit 2 Listening Ex.2 p.166 | audio/136.mp3 |
+| 137 | WB Unit 2 Listening Ex.3 p.166 | audio/137.mp3 |
+| 138 | WB Unit 2 Listening Ex.4 p.166 | audio/138.mp3 |
+| 139 | WB Unit 2 Listening Ex.5 p.166 | audio/139.mp3 |
+| 140 | WB Unit 3 Reading p.171 | audio/140.mp3 |
+| 141 | WB Unit 3 Listening Ex.2 p.172 | audio/141.mp3 |
+| 142 | WB Unit 3 Listening Ex.3 p.172 | audio/142.mp3 |
+| 143 | WB Unit 3 Listening Ex.4 p.172 | audio/143.mp3 |
 
 Треки 01=02, 09=10, 11=12 и 27=28 — побайтно одинаковые файлы (в учебнике запись звучит дважды), поэтому хранится одна копия.
 
 ## Ещё не подключено
 
-Workbook: 131–134 (Unit 1), 135–139 (Unit 2), 140–143 (Unit 3).
+Units 1–3 подключены полностью. Для новых модулей: положить `audio/NN.mp3` и вписать путь в `audio.file`.
 
 Имена файлов — латиницей, без пробелов (GitHub Pages чувствителен к регистру).
-`tests/qa.js` проверяет, что каждый подключённый файл загружается, а у треков без файла показывается заглушка.
+`tests/qa.js` проверяет, что каждый подключённый файл загружается, и что в Units 1–3 не осталось треков без файла. Заглушка для треков без файла сохраняется в коде (js/exercises.js) для будущих модулей.

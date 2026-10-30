@@ -24,7 +24,7 @@ js/vocab.js           Vocabulary Lab + интервальное повторен
 js/app.js             страницы и навигация
 assets/               шрифты (OFL), Кекс, favicon
 audio/                сюда кладутся аудиофайлы
-tests/qa.js           автотест Playwright (240 проверок)
+tests/qa.js           автотест Playwright (253 проверки)
 tests/coverage.js     генерирует COVERAGE.md из данных
 ```
 
