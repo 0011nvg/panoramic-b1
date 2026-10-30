@@ -182,14 +182,14 @@ Entry Book (A2 revision, перед Unit 1): pp.1–48, ключи — Entry Boo
 | Entry | 29 | 3 | E8 Stories | match | готово | автопроверка |
 | Entry | 29 | 4 | E8 Stories | gaps | готово | автопроверка |
 | Entry | 30 | 5 | E8 Stories | gaps | готово | автопроверка |
-| Entry | 30 | 6 | E8 Stories | listen/gaps | ждёт аудио E15 | автопроверка |
-| Entry | 30 | 7 | E8 Stories | listen/mcq | ждёт аудио E15 | автопроверка |
+| Entry | 30 | 6 | E8 Stories | listen/gaps | готово, аудио E15 | автопроверка |
+| Entry | 30 | 7 | E8 Stories | listen/mcq | готово, аудио E15 | автопроверка |
 | Entry | 30 | 8 | E8 Stories | gaps | готово | автопроверка |
 | Entry | 30 | 9 | E8 Stories | gaps | готово | автопроверка |
 | Entry | 30 | 10 | E8 Stories | gaps | готово | автопроверка |
 | Entry | 30 | VP | E8 Stories | discuss | готово | устно / отметка |
 | Entry | 31 | 1 | E8 Stories | discuss | готово | устно / отметка |
-| Entry | 31 | 2 | E8 Stories | open | ждёт аудио E16 | преподаватель ✓/✗ по ключу TG |
+| Entry | 31 | 2 | E8 Stories | open | готово, аудио E16 | преподаватель ✓/✗ по ключу TG |
 | Entry | 31 | 3 | E8 Stories | mcq | готово | автопроверка |
 | Entry | 31 | 4 | E8 Stories | gaps | готово | автопроверка |
 | Entry | 32 | 5 | E8 Stories | gaps | готово | автопроверка |
@@ -199,7 +199,7 @@ Entry Book (A2 revision, перед Unit 1): pp.1–48, ключи — Entry Boo
 | Entry | 32 | 9 | E8 Stories | gaps | готово | автопроверка |
 | Entry | 32 | 10 | E8 Stories | gaps | готово | автопроверка |
 | Entry | 32 | VP | E8 Stories | discuss | готово | устно / отметка |
-| Entry | 33 | 1 | E9 Future | gaps | ждёт аудио E17 | автопроверка |
+| Entry | 33 | 1 | E9 Future | gaps | готово, аудио E17 | автопроверка |
 | Entry | 33 | 2 | E9 Future | mcq | готово | автопроверка |
 | Entry | 33 | 3 | E9 Future | gaps | готово | автопроверка |
 | Entry | 33 | 4 | E9 Future | gaps | готово | автопроверка |
@@ -214,15 +214,15 @@ Entry Book (A2 revision, перед Unit 1): pp.1–48, ключи — Entry Boo
 | Entry | 35 | 2 | E9 Future | gaps | готово | автопроверка |
 | Entry | 35 | 3 | E9 Future | gaps | готово | автопроверка |
 | Entry | 35 | 4 | E9 Future | discuss | готово | устно / отметка |
-| Entry | 35 | 5 | E9 Future | listen/mcq | ждёт аудио E18 | автопроверка |
-| Entry | 35 | 6 | E9 Future | listen/gaps | ждёт аудио E19 | автопроверка |
+| Entry | 35 | 5 | E9 Future | listen/mcq | готово, аудио E18 | автопроверка |
+| Entry | 35 | 6 | E9 Future | listen/gaps | готово, аудио E19 | автопроверка |
 | Entry | 36 | 7 | E9 Future | gaps | готово | автопроверка |
 | Entry | 36 | 8 | E9 Future | discuss | готово | устно / отметка |
 | Entry | 36 | 9 | E9 Future | gaps | готово | автопроверка |
 | Entry | 36 | 10 | E9 Future | gaps | готово | автопроверка |
 | Entry | 36 | 11 | E9 Future | gaps | готово | автопроверка |
 | Entry | 36 | VP | E9 Future | discuss | готово | устно / отметка |
-| Entry | 37 | 1 | E10 Performance | open | ждёт аудио E20 | преподаватель ✓/✗ по ключу TG |
+| Entry | 37 | 1 | E10 Performance | open | готово, аудио E20 | преподаватель ✓/✗ по ключу TG |
 | Entry | 37 | 2 | E10 Performance | gaps | готово | автопроверка |
 | Entry | 37 | 3 | E10 Performance | match | готово | автопроверка |
 | Entry | 37 | 4 | E10 Performance | gaps | готово | автопроверка |
@@ -232,8 +232,8 @@ Entry Book (A2 revision, перед Unit 1): pp.1–48, ключи — Entry Boo
 | Entry | 38 | 8 | E10 Performance | gaps | готово | автопроверка |
 | Entry | 38 | 9 | E10 Performance | gaps | готово | автопроверка |
 | Entry | 38 | VP | E10 Performance | discuss | готово | устно / отметка |
-| Entry | 39 | 1 | E10 Performance | listen/multi | ждёт аудио E21 | автопроверка |
-| Entry | 39 | 2 | E10 Performance | listen/gaps | ждёт аудио E22 | автопроверка |
+| Entry | 39 | 1 | E10 Performance | listen/multi | готово, аудио E21 | автопроверка |
+| Entry | 39 | 2 | E10 Performance | listen/gaps | готово, аудио E22 | автопроверка |
 | Entry | 39 | 3 | E10 Performance | gaps | готово | автопроверка |
 | Entry | 39 | 4 | E10 Performance | gaps | готово | автопроверка |
 | Entry | 39 | 5 | E10 Performance | gaps | готово | автопроверка |
@@ -245,7 +245,7 @@ Entry Book (A2 revision, перед Unit 1): pp.1–48, ключи — Entry Boo
 | Entry | 40 | 11 | E10 Performance | open | готово | преподаватель ✓/✗ по ключу TG |
 | Entry | 40 | VP | E10 Performance | discuss | готово | устно / отметка |
 | Entry | 41 | 1 | E11 Experience | discuss | готово | устно / отметка |
-| Entry | 41 | 2 | E11 Experience | discuss | ждёт аудио E23 | устно / отметка |
+| Entry | 41 | 2 | E11 Experience | discuss | готово, аудио E23 | устно / отметка |
 | Entry | 41 | 3 | E11 Experience | mcq | готово | автопроверка |
 | Entry | 42 | 4 | E11 Experience | gaps | готово | автопроверка |
 | Entry | 42 | 5 | E11 Experience | gaps | готово | автопроверка |
@@ -259,12 +259,12 @@ Entry Book (A2 revision, перед Unit 1): pp.1–48, ключи — Entry Boo
 | Entry | 43 | 4 | E11 Experience | gaps | готово | автопроверка |
 | Entry | 43 | 5 | E11 Experience | gaps | готово | автопроверка |
 | Entry | 44 | 6 | E11 Experience | match | готово | автопроверка |
-| Entry | 44 | 7 | E11 Experience | listen/gaps | ждёт аудио E24 | автопроверка |
-| Entry | 44 | 8 | E11 Experience | listen/mcq | ждёт аудио E24 | автопроверка |
+| Entry | 44 | 7 | E11 Experience | listen/gaps | готово, аудио E24 | автопроверка |
+| Entry | 44 | 8 | E11 Experience | listen/mcq | готово, аудио E24 | автопроверка |
 | Entry | 44 | 9 | E11 Experience | gaps | готово | автопроверка |
 | Entry | 44 | 10 | E11 Experience | gaps | готово | автопроверка |
 | Entry | 44 | VP | E11 Experience | discuss | готово | устно / отметка |
-| Entry | 45 | 1 | E12 Change | gaps | ждёт аудио E25 | автопроверка |
+| Entry | 45 | 1 | E12 Change | gaps | готово, аудио E25 | автопроверка |
 | Entry | 45 | 2 | E12 Change | gaps | готово | автопроверка |
 | Entry | 45 | 3 | E12 Change | gaps | готово | автопроверка |
 | Entry | 46 | 4 | E12 Change | gaps | готово | автопроверка |
@@ -282,7 +282,7 @@ Entry Book (A2 revision, перед Unit 1): pp.1–48, ключи — Entry Boo
 | Entry | 47 | 6 | E12 Change | gaps | готово | автопроверка |
 | Entry | 48 | 7 | E12 Change | match | готово | автопроверка |
 | Entry | 48 | 8 | E12 Change | discuss | готово | устно / отметка |
-| Entry | 48 | 9 | E12 Change | listen/mcq | ждёт аудио E26 | автопроверка |
+| Entry | 48 | 9 | E12 Change | listen/mcq | готово, аудио E26 | автопроверка |
 | Entry | 48 | 10 | E12 Change | gaps | готово | автопроверка |
 | Entry | 48 | 11 | E12 Change | match | готово | автопроверка |
 | Entry | 48 | 12 | E12 Change | gaps | готово | автопроверка |
@@ -584,7 +584,7 @@ Entry Book (A2 revision, перед Unit 1): pp.1–48, ключи — Entry Boo
 
 ## Не перенесено / адаптировано
 - Фото учебника: не публикуются, заменены описанием или значками (1.2 упр. 2), есть пометка «📷».
-- Аудио Units 1–3 (SB 01–28, WB 131–143) и Entry Book E01–E14 подключены. Entry Book E15–E26 ждут файлов (заглушка без кнопок). Видео (Story behind the photo, Grammar Animation и др.) не предоставлены.
+- Аудио Units 1–3 (SB 01–28, WB 131–143) и Entry Book E01–E26 подключены. Видео (Story behind the photo, Grammar Animation и др.) не предоставлены.
 - Entry Book: картинки заменены текстовыми описаниями; таблицы — выбором по строкам. Опечатки Answer Key (E2 упр. 5 «guitar», E12 с. 48 упр. 13 «Don’t go») отмечены в Tutor note, сайт принимает правильный вариант.
 - Парные/групповые задания адаптированы для 1:1 (пометка «Адаптация для 1:1»).
 - WB Mediation (pp.160, 166, 172): оригинал на итальянском сохранён, добавлен русский вариант для русскоязычного ученика.

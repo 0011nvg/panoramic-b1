@@ -43,7 +43,7 @@
   const D = (id, page, num, tags, instr, prompts, o) => base(id, page, num, tags, 'discuss', instr, Object.assign({ prompts }, o));
   const MU = (id, page, num, tags, instr, options, answers, o) => base(id, page, num, tags, 'multi', instr, Object.assign({ options, answers }, o));
   const RD = (id, page, num, tags, instr, html, o) => base(id, page, num, tags, 'reference', instr, Object.assign({ html }, o));
-  const AU = n => { const t = 'E' + String(n).padStart(2, '0'); return { track: t, file: n <= 14 ? 'audio/entry/' + t + '.mp3' : null, transcript: SCRIPTS[n] || '' }; };
+  const AU = n => { const t = 'E' + String(n).padStart(2, '0'); return { track: t, file: 'audio/entry/' + t + '.mp3', transcript: SCRIPTS[n] || '' }; };
   const L = (id, page, num, tags, instr, track, inner, o) => base(id, page, num, tags, 'listen', instr, Object.assign({ audio: AU(track), inner }, o));
   const VP = (id, page, instr, prompts, o) => base(id, page, 'VP', ['VIEWPOINTS'], 'discuss', instr, Object.assign({ prompts, adapted: 'В учебнике — обсуждение в классе. 1:1: ученик отвечает, преподаватель задаёт уточняющие вопросы и делится своим мнением.' }, o));
   const gic = (title, html) => ({ title: 'GRAMMAR IN CONTEXT · ' + title, kind: 'gic', html });

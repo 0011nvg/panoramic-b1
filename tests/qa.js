@@ -187,9 +187,9 @@ const results = []; const ok = (name, cond, info) => { results.push([cond ? 'PAS
   // audio: every connected file loads; tracks without file show honest placeholder
   const aud = await page.evaluate(() => { const out = []; const walk = v => { if (v && typeof v === 'object') { if (v.audio && v.audio.track) out.push({ t: v.audio.track, f: v.audio.file || null }); Object.values(v).forEach(walk); } }; walk(LESSONS); return out; });
   const files = [...new Set(aud.filter(a => a.f).map(a => a.f))];
-  ok('audio files connected (SB 01–28 + WB 131–143 + Entry E01–E14)', aud.filter(a => a.f).length >= 55, aud.filter(a => a.f).length);
-  ok('no track left without file (Units 1–3)', aud.filter(a => !/^E/.test(a.t)).every(a => a.f), aud.filter(a => !a.f && !/^E/.test(a.t)).map(a => a.t).join(','));
-  ok('Entry tracks E15–E26 wait for files', aud.filter(a => /^E/.test(a.t) && !a.f).every(a => +a.t.slice(1) >= 15), aud.filter(a => /^E/.test(a.t) && !a.f).map(a => a.t).join(','));
+  ok('audio files connected (SB 01–28 + WB 131–143 + Entry E01–E26)', aud.filter(a => a.f).length >= 67, aud.filter(a => a.f).length);
+  ok('no track left without file (Entry + Units 1–3)', aud.every(a => a.f), aud.filter(a => !a.f).map(a => a.t).join(','));
+
   for (const f of files) {
     const dur = await page.evaluate(src => new Promise(res => { const a = new Audio(); a.preload = 'metadata'; a.onloadedmetadata = () => res(a.duration); a.onerror = () => res(-1); a.src = src; }), f);
     ok('audio loads ' + f, dur > 1, 'duration ' + dur);
@@ -197,8 +197,7 @@ const results = []; const ok = (name, cond, info) => { results.push([cond ? 'PAS
   await page.goto(BASE + '#/lesson/u1-wb'); await page.waitForTimeout(300);
   ok('Workbook lesson has real players, no placeholder', (await page.$$('.audio audio')).length > 0 && !(await page.$('.audio-ph')));
   await page.goto(BASE + '#/lesson/u0-8'); await page.waitForTimeout(300);
-  const ph = await page.$('.audio-ph'); ok('Entry track without file shows placeholder', !!ph);
-  ok('placeholder has no fake play button', !!ph && !(await ph.$('.ap-btn')));
+  ok('Entry E8 has real players, no placeholder', (await page.$$('.audio audio')).length > 0 && !(await page.$('.audio-ph')));
   ok('functional console errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   const fails = results.filter(r => r[0] === 'FAIL');

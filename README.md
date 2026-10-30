@@ -26,7 +26,7 @@ js/app.js             страницы и навигация
 assets/               шрифты (OFL), Кекс, favicon
 audio/                аудио Student Book и Workbook (NN.mp3)
 audio/entry/          аудио Entry Book (E01.mp3 …)
-tests/qa.js           автотест Playwright (546 проверок)
+tests/qa.js           автотест Playwright (556 проверок)
 tests/entry-check.js  быстрая проверка уроков: ключ → 100 %, 375 px, консоль
 tests/coverage.js     генерирует COVERAGE.md из данных
 ```
