@@ -11,7 +11,7 @@ const results = []; const ok = (name, cond, info) => { results.push([cond ? 'PAS
     const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, isMobile: !!vp.isMobile, hasTouch: !!vp.hasTouch });
     const page = await ctx.newPage();
     const errors = []; page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); }); page.on('pageerror', e => errors.push(String(e)));
-    const failed = []; page.on('requestfailed', r => failed.push(r.url())); page.on('response', r => { if (r.status() >= 400) failed.push(r.status() + ' ' + r.url()); });
+    const failed = []; page.on('requestfailed', r => { if (r.resourceType() === 'media' && /ERR_ABORTED/.test((r.failure() || {}).errorText || '')) return; failed.push(r.url()); }); page.on('response', r => { if (r.status() >= 400) failed.push(r.status() + ' ' + r.url()); });
     await page.goto(BASE); await page.waitForSelector('.hero');
     const lessons = await page.evaluate(() => BOOK.units.flatMap(u => u.lessons));
     const routes = ['#/'].concat(lessons.map(l => '#/lesson/' + l)).concat(['#/vocab', '#/vocab/u2', '#/vocab/u3-2', '#/vocab/u1-opener', '#/vocab/due', '#/vocab/hard', '#/revision', '#/progress', '#/tutor', '#/coverage']);
@@ -82,9 +82,9 @@ const results = []; const ok = (name, cond, info) => { results.push([cond ? 'PAS
   for (let i = 0; i < 5; i++) await q[i].fill(qa[i]);
   await (await c12.$('button:has-text("Check Answers")')).click();
   ok('Ex.12: wrong tense rejected → 4/5', /4 \/ 5/.test(await c12.$eval('.ex-fb', e => e.textContent)));
-  // listening Ex.6 with Teacher's Guide key (audio placeholder honest)
-  const c6 = await page.$('#ex-u11-6'); ok('Ex.6 shows audio placeholder', !!(await c6.$('.audio-ph')));
-  ok('Ex.6 has no fake play button', !(await c6.$('.ap-btn')));
+  // listening Ex.6 with Teacher's Guide key (real audio track 05)
+  const c6 = await page.$('#ex-u11-6'); ok('Ex.6 has real audio player', !!(await c6.$('.audio audio[src="audio/05.mp3"]')));
+  ok('Ex.6 has no placeholder', !(await c6.$('.audio-ph')));
   const g6 = await c6.$$('.gap'); const v6 = ['5 minutes', '1200', 'Youth Club', 'free', 'this weekend', 'local businesses'];
   for (let i = 0; i < 6; i++) await g6[i].fill(v6[i]);
   await (await c6.$('button:has-text("Check Answers")')).click();
@@ -173,6 +173,17 @@ const results = []; const ok = (name, cond, info) => { results.push([cond ? 'PAS
   const exS = await page.evaluate(() => Object.keys(Core.Store.data().ex).length); ok('Switch back keeps first student data', exS > 0, exS);
   await page.goto(BASE + '#/progress'); await page.click('button:has-text("New Student / Reset All")'); await page.click('.modal .btn.danger'); await page.waitForTimeout(150);
   const after = await page.evaluate(() => ({ ex: Object.keys(Core.Store.data().ex).length, v: Object.keys(Core.Store.data().vocab).length })); ok('Reset All clears everything', after.ex === 0 && after.v === 0, JSON.stringify(after));
+  // audio: every connected file loads; tracks without file show honest placeholder
+  const aud = await page.evaluate(() => { const out = []; const walk = v => { if (v && typeof v === 'object') { if (v.audio && v.audio.track) out.push({ t: v.audio.track, f: v.audio.file || null }); Object.values(v).forEach(walk); } }; walk(LESSONS); return out; });
+  const files = [...new Set(aud.filter(a => a.f).map(a => a.f))];
+  ok('audio files connected (Unit 1 tracks 01–10)', aud.filter(a => a.f).length >= 10, aud.filter(a => a.f).length);
+  for (const f of files) {
+    const dur = await page.evaluate(src => new Promise(res => { const a = new Audio(); a.preload = 'metadata'; a.onloadedmetadata = () => res(a.duration); a.onerror = () => res(-1); a.src = src; }), f);
+    ok('audio loads ' + f, dur > 1, 'duration ' + dur);
+  }
+  await page.goto(BASE + '#/lesson/u2-1'); await page.waitForTimeout(300);
+  const ph = await page.$('.audio-ph'); ok('track without file shows placeholder', !!ph);
+  ok('placeholder has no fake play button', !!ph && !(await ph.$('.ap-btn')));
   ok('functional console errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   const fails = results.filter(r => r[0] === 'FAIL');
