@@ -1,6 +1,6 @@
 # Interactive English Studio — Panoramic B1
 
-Сейчас готов **Unit 1 «Interactions»** целиком: Student Book pp.11–20, Grammar Reference & Practice pp.132–133, Workbook pp.156–161. Ключи и аудиоскрипты взяты из Teacher’s Guide.
+Готовы **Units 1–3** целиком (Student Book, Grammar Reference & Practice, Workbook). Ключи и аудиоскрипты взяты из Teacher’s Guide.
 
 Платформа для индивидуальных занятий (1 ученик + 1 преподаватель). Статический сайт без сервера и без ключей API — готов к GitHub Pages.
 
@@ -17,14 +17,14 @@
 index.html            оболочка
 css/app.css           дизайн (палитра #F7F4ED, #3D3BFF, #FF4FA3, #FFD400, #FF7A00)
 js/core.js            хранилище, профили, проверка ответов
-js/data-unit1.js      ВСЁ содержание уроков (задания, ключи, аудио)
-js/data-vocab.js      словарь модуля
+js/data-unitN.js      содержание модуля N (задания, ключи, аудио, транскрипты)
+js/data-vocab*.js     словарь (Unit 1 / Units 2–3)
 js/exercises.js       движок упражнений
 js/vocab.js           Vocabulary Lab + интервальное повторение
 js/app.js             страницы и навигация
 assets/               шрифты (OFL), Кекс, favicon
 audio/                сюда кладутся аудиофайлы
-tests/qa.js           автотест Playwright (133 проверки)
+tests/qa.js           автотест Playwright (213 проверок)
 tests/coverage.js     генерирует COVERAGE.md из данных
 ```
 
@@ -34,8 +34,8 @@ tests/coverage.js     генерирует COVERAGE.md из данных
 - MCQ: замените `answers: null` на ничего и добавьте `a: <индекс>` каждому вопросу;
 - Gaps: замените `{n:1}` на `{a:['ответ','вариант']}` и уберите `answers: null`.
 
-## Как добавить следующий урок
-Скопируйте объект `LESSONS['u1-1']` в `data-unit1.js`, задайте новый `id`, добавьте его в `BOOK.units[0].lessons`, слова — в `data-vocab.js` с `lesson: '<id>'`.
+## Как добавить следующий модуль
+Создайте `js/data-unitN.js` по образцу `data-unit3.js` (`BOOK.units.push({...})` + `LESSONS[...]`), подключите его в `index.html` после остальных data-файлов, слова добавьте через `VOCAB.push(...)` с `lesson: '<id урока>'`.
 Типы заданий: `gaps` (ввод, выпадающий список, свободный ответ, пример), `mcq` (в т.ч. cloze с текстом), `listen`, `inline`, `underline`, `tapfind`, `multi`, `rulebox`, `match`, `order`, `open`, `rank`, `discuss`, `checklist`, `scores`, `reference`, `interview`, `writing`, `review`.
 
 ## Проверка ответов

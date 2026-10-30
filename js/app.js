@@ -4,7 +4,11 @@
   const { h, Store, Profiles, Tutor, toast, confirmBox, promptBox, download, allItems, gradable, shuffle } = Core;
   const { SRS, MODES, Runner } = Vocab;
   const main = () => document.getElementById('main');
-  const UNIT = BOOK.units[0];
+  const ALL = () => BOOK.units.flatMap(u => u.lessons);
+  const UNIT = { get lessons() { return ALL(); } };
+  const unitOf = id => BOOK.units.find(u => u.lessons.includes(id));
+  const lname = id => { const L = LESSONS[id]; const u = unitOf(id); return (['GR', 'WB'].includes(L.code) || L.kicker === 'Unit opener' ? 'U' + u.num + ' ' : '') + (L.kicker === 'Unit opener' ? 'Opener' : L.code); };
+  const unitWordsOf = uid => VOCAB.filter(v => LESSONS[v.lesson] && LESSONS[v.lesson].unit === uid);
   const lessonWords = id => VOCAB.filter(v => v.lesson === id);
   const unitWords = () => VOCAB.slice();
 
@@ -100,7 +104,7 @@
       h('a', { class: 'back', href: '#/' }, '← All lessons'),
       h('header', { class: 'lhero' },
         h('div', { class: 'lh-code' }, L.code),
-        h('div', null, h('div', { class: 'eyebrow' }, L.kicker + ' · Textbook p.' + L.pages + (L.sdg ? ' · SDG ' + L.sdg : '')), h('h1', null, L.title), h('p', { class: 'lead' }, L.goal),
+        h('div', null, h('div', { class: 'eyebrow' }, 'Unit ' + unitOf(id).num + ' · ' + L.kicker + ' · p.' + L.pages + (L.sdg ? ' · SDG ' + L.sdg : '')), h('h1', null, L.title), h('p', { class: 'lead' }, L.goal),
           h('div', { class: 'lh-meta' }, h('span', { class: 'chip' }, '⏱ ' + L.time), L.split ? h('span', { class: 'chip tutor-only' }, L.split) : null))),
       h('div', { class: 'lnav' }, h('div', { class: 'lnav-in' }, navItems.map(([sid, t]) => h('a', { href: '#/lesson/' + id + '/@' + sid }, t)), coreBtn), h('div', { class: 'lnav-p' }, pb, pl)),
       body,
@@ -109,7 +113,7 @@
     if (exId) setTimeout(() => { const t = exId.startsWith('@') ? document.getElementById('sec-' + exId.slice(1)) : document.getElementById('ex-' + exId); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'start' }); t.classList.add('flash'); setTimeout(() => t.classList.remove('flash'), 1500); } }, 60);
     return page;
   }
-  function prevNext(id) { const ls = UNIT.lessons; const i = ls.indexOf(id); return [i > 0 ? h('a', { class: 'btn ghost', href: '#/lesson/' + ls[i - 1] }, '← ' + LESSONS[ls[i - 1]].code + ' ' + LESSONS[ls[i - 1]].title) : h('span'), i < ls.length - 1 ? h('a', { class: 'btn primary', href: '#/lesson/' + ls[i + 1] }, LESSONS[ls[i + 1]].code + ' ' + LESSONS[ls[i + 1]].title + ' →') : h('a', { class: 'btn primary', href: '#/revision' }, 'Revision →')]; }
+  function prevNext(id) { const ls = ALL(); const i = ls.indexOf(id); const lab = j => lname(ls[j]) + ' ' + LESSONS[ls[j]].title; return [i > 0 ? h('a', { class: 'btn ghost', href: '#/lesson/' + ls[i - 1] }, '← ' + lab(i - 1)) : h('span'), i < ls.length - 1 ? h('a', { class: 'btn primary', href: '#/lesson/' + ls[i + 1] }, lab(i + 1) + ' →') : h('a', { class: 'btn primary', href: '#/revision' }, 'Revision →')]; }
 
   function VocabSection(id, words) {
     return h('section', { class: 'lsec', id: 'sec-vocab' }, h('h2', { class: 'lsec-h' }, 'Vocabulary'),
@@ -132,11 +136,12 @@
   }
 
   /* ---------- Vocabulary Lab ---------- */
-  const SETS = () => [['u1', 'Unit 1 · all words', unitWords()]]
-    .concat(UNIT.lessons.filter(id => lessonWords(id).length).map(id => [id, LESSONS[id].code + ' ' + LESSONS[id].title, lessonWords(id)]))
-    .concat([['due', 'Due for review', SRS.due(unitWords())], ['hard', 'Difficult Words', SRS.difficult(unitWords())]]);
+  const SETS = () => [['all', 'All words', unitWords(), 'tab']]
+    .concat(BOOK.units.map(u => [u.id, 'Unit ' + u.num, unitWordsOf(u.id), 'tab']))
+    .concat(ALL().filter(id => lessonWords(id).length).map(id => [id, lname(id) + ' ' + LESSONS[id].title, lessonWords(id), 'lesson']))
+    .concat([['due', 'Due for review', SRS.due(unitWords()), 'tab'], ['hard', 'Difficult Words', SRS.difficult(unitWords()), 'tab']]);
   function VocabLab(setId, modeId) {
-    setId = setId || 'u1-1';
+    setId = setId || 'all';
     const sets = SETS(); const cur = sets.find(s => s[0] === setId) || sets[0]; const words = cur[2];
     const host = h('div', { class: 'run' });
     const exit = () => { location.hash = '#/vocab/' + setId; };
@@ -144,8 +149,9 @@
     const head = h('div', { class: 'vl-head' },
       h('div', null, h('div', { class: 'eyebrow' }, 'Vocabulary Lab'), h('h1', null, 'Words that ', h('span', { class: 'hl-pink' }, 'stay'), '.')),
       h('div', { class: 'vl-stats' }, stat(st.new, 'new', 'grey'), stat(st.learning, 'learning', 'pink'), stat(st.difficult, 'difficult', 'yellow'), stat(st.mastered, 'mastered', 'blue')));
-    const tabs = h('div', { class: 'tabs', role: 'tablist' }, sets.map(s => h('a', { role: 'tab', 'aria-selected': String(s[0] === cur[0]), class: s[0] === cur[0] ? 'on' : null, href: '#/vocab/' + s[0] }, s[1], ' ', h('span', { class: 'cnt' }, s[2].length))));
-    const page = h('div', { class: 'page vocab' }, head, tabs);
+    const lsel = h('select', { class: 'inp sel lsel', 'aria-label': 'Lesson word set', onchange: e => { if (e.target.value) location.hash = '#/vocab/' + e.target.value; } }, h('option', { value: '' }, 'Lesson…'), sets.filter(s => s[3] === 'lesson').map(s => h('option', { value: s[0], selected: s[0] === cur[0] || null }, s[1] + ' (' + s[2].length + ')')));
+    const tabs = h('div', { class: 'tabs', role: 'tablist' }, sets.filter(s => s[3] === 'tab').map(s => h('a', { role: 'tab', 'aria-selected': String(s[0] === cur[0]), class: s[0] === cur[0] ? 'on' : null, href: '#/vocab/' + s[0] }, s[1], ' ', h('span', { class: 'cnt' }, s[2].length))));
+    const page = h('div', { class: 'page vocab' }, head, tabs, h('div', { class: 'lsel-row' }, h('span', { class: 'muted small' }, 'Слова урока:'), lsel));
     if (!words.length) { page.append(h('div', { class: 'empty' }, cur[0] === 'due' ? 'Сейчас нет слов для повторения. Новые повторы появятся по расписанию — загляни позже или учи новые слова.' : 'Пока нет сложных слов — отлично! Слова с ошибками появятся здесь автоматически.')); return page; }
     if (modeId) {
       const m = MODES.find(x => x.id === modeId);
@@ -169,10 +175,10 @@
       h('div', { class: 'rev-grid' },
         h('div', { class: 'rcard' }, h('b', { class: 'rn' }, due.length), h('h3', null, 'Words due today'), h('p', { class: 'muted' }, 'Интервальное повторение: слово возвращается через 10 мин, 1, 3, 7 и 16 дней.'), h('button', { class: 'btn primary', disabled: !due.length || null, onclick: () => Runner(host, shuffle(due), () => ['type', 'ctx', 'spell'][Math.floor(Math.random() * 3)], { onExit: () => route() }) }, 'Start review')),
         h('div', { class: 'rcard' }, h('b', { class: 'rn' }, hard.length), h('h3', null, 'Difficult Words'), h('p', { class: 'muted' }, 'Только слова, в которых были ошибки.'), h('button', { class: 'btn primary', disabled: !hard.length || null, onclick: () => Runner(host, shuffle(hard), () => ['type', 'ctx', 'build'][Math.floor(Math.random() * 3)], { onExit: () => route() }) }, 'Train mistakes')),
-        h('div', { class: 'rcard' }, h('b', { class: 'rn' }, words.length), h('h3', null, 'Unit 1 vocabulary test'), h('p', { class: 'muted' }, 'Итоговый тест: 12 случайных слов модуля, смешанные форматы. Результат сохраняется.'), h('button', { class: 'btn primary', onclick: () => Runner(host, shuffle(words).slice(0, 12), () => ['type', 'ctx', 'def', 'spell', 'toEn'][Math.floor(Math.random() * 5)], { test: 'Unit 1 vocabulary test', onExit: () => route() }) }, 'Start test'))),
+        h('div', { class: 'rcard' }, h('b', { class: 'rn' }, words.length), h('h3', null, 'Unit vocabulary tests'), h('p', { class: 'muted' }, 'Итоговый тест модуля: 12 случайных слов, смешанные форматы. Результат сохраняется.'), h('div', { class: 'row' }, BOOK.units.map(u => h('button', { class: 'btn primary sm', onclick: () => Runner(host, shuffle(unitWordsOf(u.id)).slice(0, 12), () => ['type', 'ctx', 'def', 'spell', 'toEn'][Math.floor(Math.random() * 5)], { test: 'Unit ' + u.num + ' vocabulary test', onExit: () => route() }) }, 'Unit ' + u.num))))),
       host,
       h('div', { class: 'sec-h' }, h('h2', null, 'Exercises with mistakes')),
-      errs.length ? h('ul', { class: 'errlist' }, errs.map(([id, it, e]) => h('li', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, LESSONS[id].code + ' · ' + (it.source === 'added' ? it.title : 'Ex. ' + it.num + ' p.' + it.page)), h('span', { class: 'pill difficult' }, e.score + ' / ' + e.max)))) : h('p', { class: 'muted' }, 'Нет упражнений с ошибками. Выполни упражнения урока — сюда попадут те, где есть ошибки.'));
+      errs.length ? h('ul', { class: 'errlist' }, errs.map(([id, it, e]) => h('li', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, lname(id) + ' · ' + (it.source === 'added' ? it.title : 'Ex. ' + it.num + ' p.' + it.page)), h('span', { class: 'pill difficult' }, e.score + ' / ' + e.max)))) : h('p', { class: 'muted' }, 'Нет упражнений с ошибками. Выполни упражнения урока — сюда попадут те, где есть ошибки.'));
   }
 
   /* ---------- Progress ---------- */
@@ -182,12 +188,12 @@
     const lp = UNIT.lessons.map(id => [id, lessonProgress(id)]);
     const tot = lp.reduce((a, [, x]) => ({ d: a.d + x.done, t: a.t + x.total }), { d: 0, t: 0 });
     return h('div', { class: 'page' }, h('div', { class: 'eyebrow' }, 'My Progress · ' + p.name), h('h1', null, 'Your ', h('span', { class: 'hl-pink' }, 'progress')),
-      h('section', { class: 'stats-strip' }, stat(Math.round(tot.d / tot.t * 100) + '%', 'Unit 1 done', 'blue'), stat(st.mastered + '/' + words.length, 'words mastered', 'pink'), stat(SRS.difficult(words).length, 'difficult words', 'yellow'), stat(d.log.length, 'checked attempts', 'orange')),
+      h('section', { class: 'stats-strip' }, stat(Math.round(tot.d / tot.t * 100) + '%', 'course done', 'blue'), stat(st.mastered + '/' + words.length, 'words mastered', 'pink'), stat(SRS.difficult(words).length, 'difficult words', 'yellow'), stat(d.log.length, 'checked attempts', 'orange')),
       h('div', { class: 'sec-h' }, h('h2', null, 'Lessons')),
-      h('div', { class: 'lprog-list' }, lp.map(([id, x]) => h('a', { class: 'lp-row', href: '#/lesson/' + id }, h('b', null, LESSONS[id].code + ' ' + LESSONS[id].title), h('div', { class: 'lprog' }, h('i', { style: { width: x.pct + '%' } })), h('span', null, x.done + '/' + x.total + (x.acc != null ? ' · ' + x.acc + '% correct' : ''))))),
+      h('div', { class: 'lprog-list' }, lp.map(([id, x]) => h('a', { class: 'lp-row', href: '#/lesson/' + id }, h('b', null, lname(id) + ' ' + LESSONS[id].title), h('div', { class: 'lprog' }, h('i', { style: { width: x.pct + '%' } })), h('span', null, x.done + '/' + x.total + (x.acc != null ? ' · ' + x.acc + '% correct' : ''))))),
       h('div', { class: 'sec-h' }, h('h2', null, 'Every exercise')),
       h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable' }, h('thead', null, h('tr', null, ['Lesson', 'Exercise', 'Status', 'Last result', 'Attempts'].map(t => h('th', null, t)))),
-        h('tbody', null, rows.map(([id, it, e]) => h('tr', null, h('td', null, LESSONS[id].code), h('td', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, it.source === 'added' ? (it.title || 'Warm-up / review') : 'Ex. ' + it.num + ' · p.' + it.page)), h('td', null, e && e.done ? h('span', { class: 'pill mastered' }, 'done') : h('span', { class: 'pill new' }, '—')), h('td', null, e && e.max ? e.score + ' / ' + e.max : '—'), h('td', null, e ? String(e.attempts.length) : '0') ))))),
+        h('tbody', null, rows.map(([id, it, e]) => h('tr', null, h('td', null, lname(id)), h('td', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, it.source === 'added' ? (it.title || 'Warm-up / review') : 'Ex. ' + it.num + ' · p.' + it.page)), h('td', null, e && e.done ? h('span', { class: 'pill mastered' }, 'done') : h('span', { class: 'pill new' }, '—')), h('td', null, e && e.max ? e.score + ' / ' + e.max : '—'), h('td', null, e ? String(e.attempts.length) : '0') ))))),
       d.tests.length ? h('div', null, h('div', { class: 'sec-h' }, h('h2', null, 'Vocabulary tests')), h('ul', { class: 'errlist' }, d.tests.slice().reverse().map(t => h('li', null, h('span', null, new Date(t.t).toLocaleString('ru-RU') + ' · ' + t.name), h('span', { class: 'pill ' + (t.score / t.max >= .8 ? 'mastered' : 'difficult') }, t.score + ' / ' + t.max))))) : null,
       h('div', { class: 'sec-h' }, h('h2', null, 'Difficult words')),
       SRS.difficult(words).length ? h('div', { class: 'wlist' }, SRS.difficult(words).map(v => h('span', { class: 'wtag bad' }, v.w + ' — ' + v.ru)), h('a', { class: 'btn primary', href: '#/vocab/hard' }, 'Train them')) : h('p', { class: 'muted' }, 'Пока нет.'),
@@ -199,7 +205,7 @@
   function exportCSV() {
     const p = Profiles.ensure(); const d = Store.data(); const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
     const lines = [['student', 'lesson', 'exercise', 'page', 'done', 'score', 'max', 'attempts', 'tutor_comment'].join(',')];
-    UNIT.lessons.forEach(id => allItems(id).forEach(it => { const e = d.ex[it.id] || {}; lines.push([p.name, LESSONS[id].code, it.source === 'added' ? it.title || it.id : 'Ex ' + it.num, it.page || '', e.done ? 1 : 0, e.score == null ? '' : e.score, e.max == null ? '' : e.max, (e.attempts || []).length, e.tcomment || ''].map(q).join(',')); }));
+    UNIT.lessons.forEach(id => allItems(id).forEach(it => { const e = d.ex[it.id] || {}; lines.push([p.name, lname(id), it.source === 'added' ? it.title || it.id : 'Ex ' + it.num, it.page || '', e.done ? 1 : 0, e.score == null ? '' : e.score, e.max == null ? '' : e.max, (e.attempts || []).length, e.tcomment || ''].map(q).join(',')); }));
     lines.push(''); lines.push(['word', 'translation', 'status', 'box', 'right', 'wrong'].join(','));
     VOCAB.forEach(v => { const s = SRS.st(v.w); lines.push([v.w, v.ru, SRS.status(v.w), s.box, s.c, s.x].map(q).join(',')); });
     download('progress-' + p.name + '.csv', '﻿' + lines.join('\n'), 'text/csv');
@@ -220,11 +226,11 @@
         list.length > 1 ? h('button', { class: 'btn ghost sm', onclick: async () => { if (await confirmBox('Удалить профиль?', 'Профиль «' + s.name + '» и все его результаты будут удалены.', 'Удалить')) { Profiles.remove(s.id); Store._id = null; route(); } } }, 'Delete') : null))),
       h('button', { class: 'btn primary', onclick: async () => { const n = await promptBox('Новый ученик'); if (n) { Profiles.add(n); Store._id = null; toast('Создан профиль: ' + n); route(); } } }, '+ Add student'),
       h('div', { class: 'sec-h' }, h('h2', null, 'Quick jump')),
-      h('div', { class: 'jump' }, UNIT.lessons.map(id => h('div', { class: 'jcol' }, h('h3', null, LESSONS[id].code + ' ' + LESSONS[id].title), h('div', { class: 'jlinks' }, allItems(id).map(it => h('a', { href: '#/lesson/' + id + '/' + it.id, class: 'jl' + (it.source === 'added' ? ' add' : '') }, it.source === 'added' ? (it.oge ? 'OGE' : it.type === 'review' ? 'Review' : 'Warm') : it.num))), h('a', { class: 'small', href: '#/vocab/' + id }, 'Vocabulary of ' + LESSONS[id].code + ' →')))),
+      h('div', { class: 'jump' }, UNIT.lessons.map(id => h('div', { class: 'jcol' }, h('h3', null, lname(id) + ' ' + LESSONS[id].title), h('div', { class: 'jlinks' }, allItems(id).map(it => h('a', { href: '#/lesson/' + id + '/' + it.id, class: 'jl' + (it.source === 'added' ? ' add' : '') }, it.source === 'added' ? (it.oge ? 'OGE' : it.type === 'review' ? 'Review' : 'Warm') : it.num))), lessonWords(id).length ? h('a', { class: 'small', href: '#/vocab/' + id }, 'Vocabulary of ' + lname(id) + ' →') : null))),
       h('div', { class: 'sec-h' }, h('h2', null, 'Questions from the student')),
-      asks.length ? h('ul', { class: 'errlist' }, asks.map(([id, it, q]) => h('li', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, LESSONS[id].code + ' · ' + (it.num ? 'Ex. ' + it.num : it.title)), h('span', null, q)))) : h('p', { class: 'muted' }, 'Вопросов пока нет (кнопка «Ask your tutor» под каждым заданием).'),
+      asks.length ? h('ul', { class: 'errlist' }, asks.map(([id, it, q]) => h('li', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, lname(id) + ' · ' + (it.num ? 'Ex. ' + it.num : it.title)), h('span', null, q)))) : h('p', { class: 'muted' }, 'Вопросов пока нет (кнопка «Ask your tutor» под каждым заданием).'),
       h('div', { class: 'sec-h' }, h('h2', null, 'Audio status')),
-      h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable' }, h('thead', null, h('tr', null, ['Track', 'Exercise', 'File', 'Status'].map(t => h('th', null, t)))), h('tbody', null, audio.map(([id, it]) => h('tr', null, h('td', null, it.audio.track), h('td', null, LESSONS[id].code + ' Ex. ' + it.num + ' p.' + it.page), h('td', null, h('code', null, it.audio.file || 'audio/' + it.audio.track + '.mp3')), h('td', null, it.audio.file ? h('span', { class: 'pill mastered' }, 'connected') : h('span', { class: 'pill new' }, 'waiting'))))))),
+      h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable' }, h('thead', null, h('tr', null, ['Track', 'Exercise', 'File', 'Status'].map(t => h('th', null, t)))), h('tbody', null, audio.map(([id, it]) => h('tr', null, h('td', null, it.audio.track), h('td', null, lname(id) + ' Ex. ' + it.num + ' p.' + it.page), h('td', null, h('code', null, it.audio.file || 'audio/' + it.audio.track + '.mp3')), h('td', null, it.audio.file ? h('span', { class: 'pill mastered' }, 'connected') : h('span', { class: 'pill new' }, 'waiting'))))))),
       h('p', { class: 'muted small' }, 'Как подключить: положите файл в папку audio/ и впишите путь в js/data-unit1.js → audio.file (например \'audio/03.mp3\'). Подробно — в README.md.'),
       h('div', { class: 'sec-h' }, h('h2', null, 'Coverage')), h('a', { class: 'btn ghost', href: '#/coverage' }, 'Таблица соответствия учебнику →'));
   }
@@ -234,11 +240,11 @@
     const how = it => { const t = it.type === 'listen' ? it.inner.type : it.type; return t === 'open' ? 'Преподаватель ✓/✗ по ключу' : ['discuss', 'rank', 'checklist'].includes(t) ? 'Устно / отметка' : t === 'writing' ? (it.min ? 'Формальные признаки + преподаватель' : 'Преподаватель') : t === 'scores' ? 'Самооценка' : t === 'reference' ? 'Отметка «прочитано»' : 'Автопроверка'; };
     const typeName = { gaps: 'Gaps / select', listen: 'Audio/video + task', mcq: 'Choice', inline: 'Choose the alternative', underline: 'Tap to underline + tense', rulebox: 'Grammar box', match: 'Matching', order: 'Write the sentence', rank: 'Ranking 1–3', discuss: 'Speaking prompts', open: 'Open answers + key', tapfind: 'Tap to underline', multi: 'Tick all', checklist: 'Checklist', scores: 'Scores 0–10', reference: 'Read / listen box', writing: 'Writing', interview: 'Timed speaking' };
     return h('div', { class: 'page' }, h('div', { class: 'eyebrow' }, 'Coverage'), h('h1', null, 'Учебник → сайт'),
-      h('p', { class: 'muted' }, 'Все задания Unit 1 (Student Book pp.11–20, Grammar pp.132–133, Workbook pp.156–161) в исходной нумерации: ' + rows.length + ' заданий. Добавленные материалы (warm-up, OGE, review) в таблицу не входят и на сайте помечены «Добавлено».'),
+      h('p', { class: 'muted' }, 'Все задания модулей ' + BOOK.units.map(u => u.num).join(', ') + ' (Student Book, Grammar Reference & Practice, Workbook) в исходной нумерации: ' + rows.length + ' заданий. Добавленные материалы (warm-up, OGE, review) в таблицу не входят и на сайте помечены «Добавлено».'),
       h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable' }, h('thead', null, h('tr', null, ['Page', 'Ex.', 'Site section', 'Format', 'Status', 'Check'].map(t => h('th', null, t)))),
-        h('tbody', null, rows.map(([id, it]) => h('tr', null, h('td', null, it.page), h('td', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, it.num)), h('td', null, LESSONS[id].code + ' ' + LESSONS[id].title), h('td', null, typeName[it.type] || it.type), h('td', null, it.audio && !it.audio.file ? h('span', { class: 'pill difficult' }, 'ждёт аудио ' + it.audio.track) : h('span', { class: 'pill mastered' }, 'готово')), h('td', null, how(it))))))),
+        h('tbody', null, rows.map(([id, it]) => h('tr', null, h('td', null, it.page), h('td', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, it.num)), h('td', null, lname(id) + ' ' + LESSONS[id].title), h('td', null, typeName[it.type] || it.type), h('td', null, it.audio && !it.audio.file ? h('span', { class: 'pill difficult' }, 'ждёт аудио ' + it.audio.track) : h('span', { class: 'pill mastered' }, 'готово')), h('td', null, how(it))))))),
       h('div', { class: 'sec-h' }, h('h2', null, 'Не извлечено / не предоставлено')),
-      h('ul', { class: 'pending' }, ['Аудио и видео: треки 01–10 (Student Book) и 131–134 (Workbook) — плееры готовы, транскрипты из Teacher’s Guide уже подключены', 'Видео Grammar Animation, Culture video — не предоставлены', 'Фото учебника не переносятся (заменены описанием/значками)', 'Units 2–12 — следующие этапы'].map(t => h('li', null, '⏳ ' + t))));
+      h('ul', { class: 'pending' }, ['Аудио и видео (Student Book и Workbook) — плееры готовы, транскрипты из Teacher’s Guide уже подключены', 'Видео Grammar Animation, Culture video — не предоставлены', 'Фото учебника не переносятся (заменены описанием/значками)', 'Следующие модули — по мере работы'].map(t => h('li', null, '⏳ ' + t))));
   }
   function NotFound() { return h('div', { class: 'page' }, h('h1', null, 'Page not found'), h('a', { class: 'btn primary', href: '#/' }, 'Home')); }
 

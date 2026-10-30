@@ -13,7 +13,8 @@ const results = []; const ok = (name, cond, info) => { results.push([cond ? 'PAS
     const errors = []; page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); }); page.on('pageerror', e => errors.push(String(e)));
     const failed = []; page.on('requestfailed', r => failed.push(r.url())); page.on('response', r => { if (r.status() >= 400) failed.push(r.status() + ' ' + r.url()); });
     await page.goto(BASE); await page.waitForSelector('.hero');
-    const routes = ['#/', '#/lesson/u1-opener', '#/lesson/u1-1', '#/lesson/u1-2', '#/lesson/u1-3', '#/lesson/u1-4', '#/lesson/u1-5', '#/lesson/u1-6', '#/lesson/u1-gr', '#/lesson/u1-wb', '#/vocab', '#/vocab/u1-opener', '#/vocab/due', '#/vocab/hard', '#/revision', '#/progress', '#/tutor', '#/coverage'];
+    const lessons = await page.evaluate(() => BOOK.units.flatMap(u => u.lessons));
+    const routes = ['#/'].concat(lessons.map(l => '#/lesson/' + l)).concat(['#/vocab', '#/vocab/u2', '#/vocab/u3-2', '#/vocab/u1-opener', '#/vocab/due', '#/vocab/hard', '#/revision', '#/progress', '#/tutor', '#/coverage']);
     for (const r of routes) {
       await page.evaluate(h => { location.hash = h; }, r); await page.waitForTimeout(250);
       const ov = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

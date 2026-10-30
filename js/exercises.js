@@ -251,19 +251,22 @@
   function TapFind(it) {
     const toks = []; const on = new Set();
     const save = autosave(it, () => [...on]);
-    const paraEls = it.paras.map(p => {
+    let pIdx = -1;
+    const paraEls = it.paras.map(p => { pIdx++; const myP = pIdx;
       const obj = typeof p === 'string' ? { t: p } : p; const start = toks.length;
       if (obj.static) return h('p', { class: 'tf-p static' }, obj.t);
       const words = obj.t.split(/\s+/).filter(Boolean);
-      const btns = words.map(w => { const i = toks.length; const b = h('button', { class: 'tok', 'aria-pressed': 'false', onclick: () => { on.has(i) ? on.delete(i) : on.add(i); paint(); save(); } }, w); toks.push({ w, n: tnorm(w), b, p: start }); return b; });
+      const btns = words.map(w => { const i = toks.length; const b = h('button', { class: 'tok', 'aria-pressed': 'false', onclick: () => { on.has(i) ? on.delete(i) : on.add(i); paint(); save(); } }, w); toks.push({ w, n: tnorm(w), b, p: start, pi: myP }); return b; });
       const spaced = []; btns.forEach((b, i) => { if (i) spaced.push(' '); spaced.push(b); });
       return h('p', { class: 'tf-p' + (obj.who ? ' who' : '') }, obj.who ? h('b', { class: 'spk' }, obj.who) : null, h('span', null, spaced));
     });
     const used = new Set();
-    function locate(phrase) {
+    function locate(target) {
+      const phrase = typeof target === 'string' ? target : target.t; const para = typeof target === 'string' ? null : target.p;
       const raw = w => w.toLowerCase().replace(/[’‘]/g, "'");
       const pn = phrase.split(/\s+/).filter(Boolean).map(raw);
       for (let i = 0; i <= toks.length - pn.length; i++) {
+        if (para != null && toks[i].pi !== para) continue;
         if (pn.every((w, k) => raw(toks[i + k].w) === w) && !pn.some((_, k) => used.has(i + k))) { const idx = pn.map((_, k) => i + k); idx.forEach(x => used.add(x)); return idx; }
       }
       console.warn('TapFind: phrase not found', phrase); return [];
@@ -295,7 +298,7 @@
     function paint() { btns.forEach((b, i) => { b.classList.toggle('on', on.has(i)); b.setAttribute('aria-pressed', String(on.has(i))); b.classList.remove('ok', 'bad', 'miss'); }); }
     return {
       el,
-      check: () => { paint(); let s = 0; const want = new Set(it.answers); btns.forEach((b, i) => { if (on.has(i) && want.has(i)) { s++; b.classList.add('ok'); } else if (on.has(i)) { s--; b.classList.add('bad'); } else if (want.has(i)) b.classList.add('miss'); }); return { score: Math.max(0, s), max: it.answers.length, note: 'Лишний вариант = −1.' }; },
+      check: () => { paint(); let s = 0; const want = new Set(it.answers); const opt = new Set(it.optional || []); btns.forEach((b, i) => { if (opt.has(i)) return; if (on.has(i) && want.has(i)) { s++; b.classList.add('ok'); } else if (on.has(i)) { s--; b.classList.add('bad'); } else if (want.has(i)) b.classList.add('miss'); }); return { score: Math.max(0, s), max: it.answers.length, note: 'Лишний вариант = −1.' }; },
       retry: () => { const want = new Set(it.answers); on = new Set([...on].filter(i => want.has(i))); paint(); },
       reset: () => { on.clear(); paint(); }, key: () => { on = new Set(it.answers); paint(); },
       setState: st => { if (Array.isArray(st)) { on = new Set(st); paint(); } }

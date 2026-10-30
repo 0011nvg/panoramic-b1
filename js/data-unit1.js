@@ -19,7 +19,7 @@ window.BOOK = {
         ['Vocabulary', 'Hang-out spaces; Body language and gestures; Modifying adverbs']
       ],
       lessons: ['u1-opener', 'u1-1', 'u1-2', 'u1-3', 'u1-4', 'u1-5', 'u1-6', 'u1-gr', 'u1-wb'],
-      pending: ['Units 2–12 — следующие этапы', 'Аудио и видео (треки 01–10, 131–134) — интерфейс готов, ждёт файлов']
+      pending: []
     }
   ]
 };
