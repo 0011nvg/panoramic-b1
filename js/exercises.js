@@ -52,6 +52,7 @@
       h('p', { class: 'ex-instr', html: md(it.instruction || '') }),
       it.adapted ? h('p', { class: 'ex-adapt' }, h('b', null, 'Адаптация для 1:1. '), it.adapted) : null,
       it.ogeNote ? h('p', { class: 'ex-adapt oge' }, it.ogeNote) : null,
+      window.Pics ? Pics.forItem(it) : null,
       it.photo ? h('p', { class: 'ex-photo' }, '📷 ', it.photo) : null,
       (it.boxes || []).map(b => h('aside', { class: 'skillbox ' + (b.kind || '') }, h('div', { class: 'sk-t' }, b.title), h('div', { html: b.html }))),
       it.tutorNote ? h('details', { class: 'tutor-only tnote' }, h('summary', null, 'Tutor note'), h('p', null, it.tutorNote)) : null);

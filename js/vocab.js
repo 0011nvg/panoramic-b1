@@ -81,8 +81,49 @@
     // Use: выбери слово, которое подходит по смыслу и сочетаемости (новое предложение, не пример с карточки)
     ctxChoice: (v, pool) => d => { const s = (v.ctx && v.ctx[0]) || v.ex.replace(new RegExp(v.w, 'i'), '___'); const same = pool.filter(x => x.pos === v.pos && x.w !== v.w); const opts = shuffle([v.w].concat(shuffle(same.length >= 3 ? same : pool.filter(x => x.w !== v.w)).slice(0, 3).map(x => x.w))); return choice(v, s, opts, opts.indexOf(v.w), 'recog', d, v.acc2 ? 'Which word fits? (In the sentence it may change its form.)' : 'Which word fits the sentence?'); },
     // Use: собери пример из частей — слово в естественном контексте и порядок слов
-    sent: (v) => d => sentence(v, d)
+    sent: (v) => d => sentence(v, d),
+    // Recognise по картинке: 3D-изображение → выбери слово (только слова, которые картинка действительно передаёт)
+    pic: (v, pool) => d => { const ps = picPool(pool); const opts = shuffle([v.w].concat(shuffle(ps.filter(x => x.w !== v.w)).slice(0, 3).map(x => x.w))); return choice(v, h('div', null, h('div', { class: 'q-pic' }, Pics.img(Pics.wordPic(v), { size: 128, alt: 'Picture: which word is it?' })), 'Which word matches the picture?'), opts, opts.indexOf(v.w), 'recog', d); }
   };
+  /* ---------- слова с картинкой ---------- */
+  const hasPic = v => !!(window.Pics && Pics.wordPic(v) && Pics.has(Pics.wordPic(v)));
+  function picPool(pool) { const p = (pool || VOCAB).filter(hasPic); return p.length >= 4 ? p : VOCAB.filter(hasPic); }
+  function picSet(words) { const p = words.filter(hasPic); return { list: p.length >= 4 ? p : VOCAB.filter(hasPic), own: p.length >= 4 }; }
+  function PicMatch(host, words, onExit) {
+    const s = picSet(words); host.innerHTML = '';
+    const note = s.own ? null : h('p', { class: 'muted small' }, 'В этом наборе мало слов с картинкой — тренируем все такие слова платформы.');
+    const box = h('div'); host.append(note || '', box);
+    Runner(box, shuffle(s.list).slice(0, 10), () => 'pic', { onExit, pool: s.list });
+  }
+  /* ---------- Scene Explorer: сцена с предметами — изучи, потом найди ---------- */
+  function SceneExplorer(host, words, onExit) {
+    const s = picSet(words); const list = shuffle(s.list).slice(0, 8);
+    const POS = [[16, 34], [40, 26], [64, 32], [86, 26], [24, 70], [48, 76], [72, 70], [90, 74]];
+    host.innerHTML = '';
+    const stage = h('div', { class: 'scene-stage', role: 'group', 'aria-label': 'Scene with objects' });
+    stage.innerHTML = '<svg class="stage-bg" viewBox="0 0 160 90" preserveAspectRatio="none" aria-hidden="true"><circle cx="134" cy="16" r="9" fill="#FFD400"/><path d="M0 52 C40 44 80 58 160 48 V90 H0Z" fill="#F1DCAE"/><path d="M0 60 C50 54 110 66 160 58" fill="none" stroke="#E2C384" stroke-width="1"/></svg>';
+    const say = h('div', { class: 'sc-say', role: 'status', 'aria-live': 'polite' }, h('b', null, 'Tap the objects'), h('span', null, 'Нажимай на предметы: слово, произношение и перевод'));
+    const q = h('div', { class: 'sc-q' }, 'Explore the scene'); const fb = h('div', { class: 'q-fb', role: 'status' });
+    const goBtn = h('button', { class: 'btn primary', onclick: () => quest() }, 'Find them →');
+    const bar = h('div', { class: 'sc-bar' }, q, h('div', { class: 'row' }, goBtn, h('button', { class: 'btn ghost', onclick: onExit }, '← All modes')));
+    const seen = new Set(); let mode = 'explore', order = [], qi = 0, right = 0, tries = 0;
+    const objs = list.map((v, i) => { const b = h('button', { class: 'sc-obj', style: { left: POS[i][0] + '%', top: POS[i][1] + '%' }, 'aria-label': mode === 'explore' ? v.w : 'object ' + (i + 1), onclick: () => tap(v, b) }, Pics.img(Pics.wordPic(v), { size: 128 })); b._v = v; return b; });
+    objs.forEach(b => stage.appendChild(b)); stage.appendChild(say);
+    host.append(s.own ? '' : h('p', { class: 'muted small' }, 'В этом наборе мало слов с картинкой — сцена собрана из слов всей платформы.'), bar, stage, fb);
+    function tap(v, b) {
+      if (mode === 'explore') { seen.add(v.w); b.classList.add('seen'); SRS.seen(v.w); say.innerHTML = ''; say.append(h('b', null, v.w), h('span', null, v.ipa + ' · ' + v.ru)); speak(v.w); if (seen.size === list.length) goBtn.focus(); return; }
+      if (mode !== 'quest' || b.classList.contains('gone')) return;
+      const target = order[qi]; tries++;
+      if (v.w === target.w) { const first = tries === 1; if (first) right++; SRS.grade(v.w, first, 'recog'); b.classList.remove('bad'); b.classList.add('ok', 'gone'); fb.className = 'q-fb ok'; fb.textContent = first ? 'Correct! ' + v.w : 'Yes — ' + v.w + '. (не с первой попытки)'; qi++; tries = 0; setTimeout(next, 650); }
+      else { b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad'); fb.className = 'q-fb bad'; fb.textContent = 'Not this one — it’s “' + v.w + '”. Try again!'; }
+    }
+    function quest() { mode = 'quest'; order = shuffle(list); qi = 0; right = 0; goBtn.hidden = true; objs.forEach((b, i) => { b.classList.remove('seen', 'ok', 'gone'); b.setAttribute('aria-label', 'object ' + (i + 1)); }); say.hidden = true; next(); }
+    function next() {
+      if (qi >= order.length) { mode = 'end'; q.textContent = 'Scene complete: ' + right + ' / ' + order.length + ' с первой попытки'; fb.textContent = ''; document.dispatchEvent(new CustomEvent('vocab-run-end', { detail: { right, total: order.length, pct: Math.round(right / order.length * 100) } }));
+        goBtn.hidden = false; goBtn.textContent = 'Play again'; goBtn.onclick = () => SceneExplorer(host, words, onExit); return; }
+      q.innerHTML = ''; q.append('Find: ', h('span', { class: 'hl-pink' }, order[qi].w), ' ', sayBtn(order[qi].w));
+    }
+  }
 
   function chunks(text) {
     let t = text.split(/\s+/).filter(Boolean);
@@ -244,7 +285,7 @@
       if (i >= list.length) { wrap.innerHTML = ''; wrap.append(h('div', { class: 'run-end' }, h('p', null, 'You have seen all ' + list.length + ' cards. Now try Recognise and Recall modes!'), h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => Flashcards(host, words, onExit) }, 'Again'), h('button', { class: 'btn ghost', onclick: onExit }, '← All modes')))); return; }
       const v = list[i]; SRS.seen(v.w);
       const card = h('button', { class: 'fcard', 'aria-label': 'Flip card', onclick: () => card.classList.toggle('flip') },
-        h('div', { class: 'fc-face front' }, h('div', { class: 'fc-emo', 'aria-hidden': 'true' }, v.emoji || '★'), h('div', { class: 'fc-w' }, v.w), h('div', { class: 'fc-ipa' }, v.ipa + '  ·  ' + v.pos), h('div', { class: 'muted small' }, 'tap to flip')),
+        h('div', { class: 'fc-face front' }, h('div', { class: 'fc-emo', 'aria-hidden': 'true' }, (window.Pics && Pics.wordPic(v)) || v.emoji || '★'), h('div', { class: 'fc-w' }, v.w), h('div', { class: 'fc-ipa' }, v.ipa + '  ·  ' + v.pos), h('div', { class: 'muted small' }, 'tap to flip')),
         h('div', { class: 'fc-face back' }, h('div', { class: 'fc-ru' }, v.ru), h('div', { class: 'fc-def' }, v.def), h('div', { class: 'fc-ex' }, '“' + v.ex + '”')));
       wrap.innerHTML = '';
       wrap.append(h('div', { class: 'muted small' }, (i + 1) + ' / ' + list.length + ' · Stage 1 — Learn'), card,
@@ -280,6 +321,8 @@
     { id: 'choose', stage: 'Use', name: 'Right Word, Right Place', desc: 'Choose the word that fits a new sentence.', run: (h0, w, x) => Runner(h0, shuffle(w), () => 'ctxChoice', { onExit: x, pool: w.length >= 4 ? w : VOCAB }) },
     { id: 'sent', stage: 'Use', name: 'Sentence Builder', desc: 'Put the example sentence together.', run: (h0, w, x) => Runner(h0, shuffle(w).slice(0, 10), () => 'sent', { onExit: x }) },
     { id: 'pers', stage: 'Personalise', name: 'Make it yours', desc: 'Write true sentences about you.', run: (h0, w, x) => Personalise(h0, w, x) },
+    { id: 'pic', stage: 'Recognise', name: 'Picture Match', desc: 'See the 3D picture — choose the word.', run: (h0, w, x) => PicMatch(h0, w, x) },
+    { id: 'scene', stage: 'Learn → Recognise', name: 'Scene Explorer', desc: 'Tap objects to learn them, then find them in the scene.', run: (h0, w, x) => SceneExplorer(h0, w, x) },
     { id: 'blitz', stage: 'Game', name: 'Keks Blitz', desc: '60 seconds. Streaks multiply your score.', run: (h0, w, x, name, setId) => Blitz(h0, w, x, setId) },
     { id: 'boss', stage: 'Review', name: 'Vocabulary Boss Challenge', desc: 'Mixed test. Beat the boss with 80%.', boss: true, run: (h0, w, x, name) => Runner(h0, shuffle(w).slice(0, 12), () => ['type', 'ctx', 'def', 'spell', 'toEn'][Math.floor(Math.random() * 5)], { onExit: x, test: name || 'Boss Challenge' }) }
   ];

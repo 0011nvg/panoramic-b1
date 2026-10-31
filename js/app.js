@@ -85,16 +85,16 @@
         h('div', { class: 'pl-top' }, h('span', { class: 'av lg', 'aria-hidden': 'true' }, (p.name[0] || 'S').toUpperCase()), h('div', { class: 'pl-n' }, h('small', null, p.name), h('b', null, 'Level ' + L.i + ' · ' + L.name))),
         h('div', { class: 'xpbar' }, h('i', { style: { width: L.pct + '%' } })),
         h('div', { class: 'pl-meta' }, h('span', null, L.xp + ' XP'), h('span', null, sk ? '🔥 ' + sk + ' дн. подряд' : '🔥 начни серию сегодня'), h('span', null, '🏅 ' + bd.filter(b => b.got).length + '/' + bd.length))),
-      curId ? h('a', { class: 'tcard2 next', href: '#/lesson/' + curId + (nx ? '/' + nx.id : '') },
+      curId ? h('a', { class: 'tcard2 next with-pic', href: '#/lesson/' + curId + (nx ? '/' + nx.id : '') },
         h('small', null, last ? 'Продолжить' : 'Начать'), h('b', null, lname(curId) + ' · ' + LESSONS[curId].title),
         h('span', null, nx ? 'Дальше: ' + (nx.source === 'added' ? nx.title || 'Warm-up' : 'Ex. ' + nx.num + ' · p.' + nx.page) : 'Остались только Extra-задания'),
-        h('div', { class: 'lprog' }, h('i', { style: { width: cp.pct + '%' } })), h('span', { class: 'go', 'aria-hidden': 'true' }, '→')) : null,
-      h('a', { class: 'tcard2 words', href: due ? '#/vocab/due/guided' : hard ? '#/vocab/hard/guided' : '#/vocab/' + (curId && lessonWords(curId).length ? curId : 'all') + '/guided' },
+        h('div', { class: 'lprog' }, h('i', { style: { width: cp.pct + '%' } })), h('span', { class: 'go', 'aria-hidden': 'true' }, '→'), tcPic(((window.VISUALS || {}).lessons || {})[curId] ? VISUALS.lessons[curId].items[0] : '📘')) : null,
+      h('a', { class: 'tcard2 words with-pic', href: due ? '#/vocab/due/guided' : hard ? '#/vocab/hard/guided' : '#/vocab/' + (curId && lessonWords(curId).length ? curId : 'all') + '/guided' },
         h('small', null, 'Слова'), h('b', null, due ? due + ' пора повторить' : hard ? hard + ' сложных слов' : 'Learn with Keks'),
-        h('span', null, due || hard ? '8 слов × 3 шага: узнать → употребить → вспомнить' : 'Новые слова урока: узнать → употребить → вспомнить'), h('span', { class: 'go', 'aria-hidden': 'true' }, '→')),
-      h('a', { class: 'tcard2 fix', href: '#/revision' },
+        h('span', null, due || hard ? '8 слов × 3 шага: узнать → употребить → вспомнить' : 'Новые слова урока: узнать → употребить → вспомнить'), h('span', { class: 'go', 'aria-hidden': 'true' }, '→'), tcPic('📚')),
+      h('a', { class: 'tcard2 fix with-pic', href: '#/revision' },
         h('small', null, 'Работа над ошибками'), h('b', null, errs.length ? errs.length + ' заданий до ★★★' : 'Ошибок нет'),
-        h('span', null, errs.length ? 'Исправленное задание даёт бонус XP и значок Bug hunter' : 'Сюда попадут задания, где были ошибки'), h('span', { class: 'go', 'aria-hidden': 'true' }, '→')));
+        h('span', null, errs.length ? 'Исправленное задание даёт бонус XP и значок Bug hunter' : 'Сюда попадут задания, где были ошибки'), h('span', { class: 'go', 'aria-hidden': 'true' }, '→'), tcPic(errs.length ? '🔧' : '🎯')));
     return h('div', { class: 'page home' },
       h('section', { class: 'hero' },
         h('div', { class: 'hero-txt' },
@@ -107,20 +107,22 @@
           h('figcaption', { class: 'keks-say' }, due ? 'Мяу! ' + due + ' слов ждут повторения.' : errs.length ? 'Мяу! Давай доведём ошибки до ★★★?' : 'Мяу! Начнём?'))),
       today,
       h('section', { class: 'route-strip' }, h('b', null, 'Как устроен урок'),
-        h('ol', null, [['Start', 'разминка и новые слова'], ['Practice', 'задания учебника с проверкой'], ['Train', 'слова: узнать → употребить → вспомнить'], ['Apply', 'ОГЭ по теме урока'], ['Review', 'самооценка и работа над ошибками']].map(([a, b]) => h('li', null, h('span', null, a), ' ', b)))),
+        h('ol', null, [['Start', 'разминка и новые слова', '👋'], ['Practice', 'задания учебника с проверкой', '📘'], ['Train', 'слова: узнать → употребить → вспомнить', '🏋️'], ['Apply', 'ОГЭ по теме урока', '🎯'], ['Review', 'самооценка и работа над ошибками', '🏁']].map(([a, b, e]) => h('li', null, h('span', null, window.Pics ? Pics.img(e, { size: 32 }) : null, a), ' ', b)))),
       h('section', { class: 'stats-strip' },
-        stat(st.mastered, 'words mastered', 'blue'), stat(st.learning + st.difficult, 'words in progress', 'pink'), stat(due, 'due for review', 'yellow'),
-        stat(Object.values(d.ex).filter(e => e.done).length, 'exercises done', 'orange')),
+        stat(st.mastered, 'words mastered', 'blue', '🧠'), stat(st.learning + st.difficult, 'words in progress', 'pink', '📈'), stat(due, 'due for review', 'yellow', '⏰'),
+        stat(Object.values(d.ex).filter(e => e.done).length, 'exercises done', 'orange', '✅')),
       h('section', { class: 'units' },
         h('div', { class: 'sec-h' }, h('h2', null, 'Modules'), h('span', { class: 'muted' }, 'В порядке учебника')),
         BOOK.units.map(u => UnitCard(u))));
   }
-  const stat = (n, l, c) => h('div', { class: 'stat ' + c }, h('b', null, n), h('span', null, l));
+  const tcPic = e => window.Pics ? Pics.img(e, { cls: 'tc-pic', size: 96 }) : null;
+  const stat = (n, l, c, e) => h('div', { class: 'stat ' + c }, h('b', null, n), h('span', null, l), e && window.Pics ? Pics.img(e, { cls: 'st-pic', size: 64 }) : null);
 
   function UnitCard(u) {
     return h('article', { class: 'unit-card' },
       h('div', { class: 'unit-no' }, u.num),
       h('div', { class: 'unit-body' },
+        window.Pics ? Pics.unitCover(u) : null,
         h('h3', null, u.title), h('div', { class: 'muted small' }, 'Pages ' + u.pages),
         h('ul', { class: 'skills' }, u.skills.map(([k, v]) => h('li', null, h('b', null, k), ' ', v))),
         h('div', { class: 'lessons' }, u.lessons.map(id => LessonTile(id))),
@@ -129,7 +131,7 @@
   function LessonTile(id) {
     const L = LESSONS[id]; const p = lessonProgress(id);
     return h('a', { class: 'ltile ' + L.accent + (Game.lessonComplete(id) ? ' complete' : ''), href: '#/lesson/' + id },
-      h('div', { class: 'lt-code' }, L.code), h('div', { class: 'lt-t' }, h('small', null, L.kicker + ' · p.' + L.pages), h('b', null, L.title), (() => { const s2 = Game.lessonStars(id); return s2.got ? h('small', { class: 'lt-st game' }, '★ ' + s2.got + '/' + s2.max) : null; })()),
+      h('div', { class: 'lt-code' }, L.code, window.Pics ? Pics.lessonIcon(id) : null), h('div', { class: 'lt-t' }, h('small', null, L.kicker + ' · p.' + L.pages), h('b', null, L.title), (() => { const s2 = Game.lessonStars(id); return s2.got ? h('small', { class: 'lt-st game' }, '★ ' + s2.got + '/' + s2.max) : null; })()),
       h('div', { class: 'lt-p' }, h('div', { class: 'ring', style: { '--p': p.pct * 3.6 + 'deg' } }, h('span', null, p.pct + '%'))));
   }
 
@@ -143,7 +145,7 @@
     const navItems = [];
     const body = h('div', { class: 'lesson-body' });
     secs.forEach(s => {
-      const sec = h('section', { class: 'lsec', id: 'sec-' + s.id }, h('h2', { class: 'lsec-h' }, s.title));
+      const sec = h('section', { class: 'lsec', id: 'sec-' + s.id }, h('h2', { class: 'lsec-h' }, window.Pics ? Pics.sectionIcon(s.id) : null, s.title));
       navItems.push([s.id, s.title]);
       s.items.forEach(it => sec.appendChild(Exercises.render(it)));
       body.appendChild(sec);
@@ -167,12 +169,13 @@
         h('div', { class: 'ms-row' }, ms.map(m => h('div', { class: 'ms' + (m.done ? ' done' : '') }, h('span', { class: 'ms-ic', 'aria-hidden': 'true' }, m.done ? '✓' : m.icon), h('div', null, h('b', null, m.title), h('small', null, m.desc), h('div', { class: 'ms-bar' }, h('i', { style: { width: Math.min(100, Math.round(m.cur / Math.max(1, m.goal) * 100)) + '%' } }))), h('span', { class: 'ms-n' }, m.cur + '/' + m.goal))))); };
     paintMs();
     document.addEventListener('progress-changed', onProg); currentCleanup = () => document.removeEventListener('progress-changed', onProg);
+    const hpano = window.Pics ? Pics.lessonPano(id) : null;
     const page = h('div', { class: 'page lesson acc-' + L.accent },
       h('a', { class: 'back', href: '#/' }, '← All lessons'),
-      h('header', { class: 'lhero' },
+      h('header', { class: 'lhero' + (hpano ? ' has-pano' : '') },
         h('div', { class: 'lh-code' }, L.code),
         h('div', null, h('div', { class: 'eyebrow' }, ulab(unitOf(id)) + ' · ' + L.kicker + ' · p.' + L.pages + (L.sdg ? ' · SDG ' + L.sdg : '')), h('h1', null, L.title), h('p', { class: 'lead' }, L.goal),
-          h('div', { class: 'lh-meta' }, h('span', { class: 'chip' }, '⏱ ' + L.time), L.split ? h('span', { class: 'chip tutor-only' }, L.split) : null))),
+          h('div', { class: 'lh-meta' }, h('span', { class: 'chip' }, '⏱ ' + L.time), L.split ? h('span', { class: 'chip tutor-only' }, L.split) : null)), hpano),
       msBox,
       h('div', { class: 'lnav' }, h('div', { class: 'lnav-in' }, navItems.map(([sid, t]) => h('a', { href: '#/lesson/' + id + '/@' + sid, 'data-stage': STAGE(sid) }, h('i', null, STAGE(sid)), t)), coreBtn), h('div', { class: 'lnav-p' }, pb, pl)),
       body,
@@ -185,7 +188,7 @@
   function prevNext(id) { const ls = ALL(); const i = ls.indexOf(id); const lab = j => lname(ls[j]) + ' ' + LESSONS[ls[j]].title; return [i > 0 ? h('a', { class: 'btn ghost', href: '#/lesson/' + ls[i - 1] }, '← ' + lab(i - 1)) : h('span'), i < ls.length - 1 ? h('a', { class: 'btn primary', href: '#/lesson/' + ls[i + 1] }, lab(i + 1) + ' →') : h('a', { class: 'btn primary', href: '#/revision' }, 'Revision →')]; }
 
   function VocabSection(id, words) {
-    return h('section', { class: 'lsec', id: 'sec-vocab' }, h('h2', { class: 'lsec-h' }, 'Vocabulary'),
+    return h('section', { class: 'lsec', id: 'sec-vocab' }, h('h2', { class: 'lsec-h' }, window.Pics ? Pics.sectionIcon('vocab') : null, 'Vocabulary'),
       h('p', { class: 'muted' }, 'Слова со страниц урока. Нажми на карточку, чтобы увидеть перевод. Цвет точки — статус: серый = новое, розовый = учу, жёлтый = сложное, синий = выучено.'),
       h('div', { class: 'wgrid' }, words.map(v => WordCard(v))),
       h('div', { class: 'row' }, h('a', { class: 'btn primary', href: '#/vocab/' + id }, 'Train these words →'), h('a', { class: 'btn ghost', href: '#/vocab/' + id + '/flash' }, 'Flashcards')));
@@ -193,13 +196,13 @@
   function WordCard(v) {
     const s = SRS.status(v.w);
     const c = h('button', { class: 'wcard', 'aria-label': v.w + ' — show translation', onclick: () => { c.classList.toggle('open'); SRS.seen(v.w); } },
-      h('span', { class: 'st ' + s, title: s, 'aria-hidden': 'true' }), h('span', { class: 'wc-e', 'aria-hidden': 'true' }, v.emoji),
+      h('span', { class: 'st ' + s, title: s, 'aria-hidden': 'true' }), h('span', { class: 'wc-e', 'aria-hidden': 'true' }, (window.Pics && Pics.wordPic(v)) || v.emoji),
       h('b', null, v.w), h('span', { class: 'ipa' }, v.ipa), h('span', { class: 'ru' }, v.ru), h('span', { class: 'exs' }, v.ex));
     return c;
   }
   function TrainSection(id) {
-    const pick = ['guided', 'flash', 'match', 'type', 'ctx', 'choose', 'boss'];
-    return h('section', { class: 'lsec', id: 'sec-train' }, h('h2', { class: 'lsec-h' }, 'Vocabulary Training'),
+    const pick = ['guided', 'flash', 'pic', 'scene', 'match', 'type', 'ctx', 'choose', 'boss'];
+    return h('section', { class: 'lsec', id: 'sec-train' }, h('h2', { class: 'lsec-h' }, window.Pics ? Pics.sectionIcon('train') : null, 'Vocabulary Training'),
       h('p', { class: 'muted' }, 'Learn → Recognise → Recall → Use → Personalise → Review. Слово считается выученным только после нескольких правильных ответов по памяти с интервалами (10 минут → 1 день → 3 дня).'),
       h('div', { class: 'mgrid' }, MODES.filter(m => pick.includes(m.id)).map(m => h('a', { class: 'mtile' + (m.star ? ' star' : ''), href: '#/vocab/' + id + '/' + m.id }, h('small', null, m.stage), h('b', null, m.name), h('span', null, m.desc)))));
   }
@@ -325,7 +328,7 @@
       h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable' }, h('thead', null, h('tr', null, ['Page', 'Ex.', 'Site section', 'Format', 'Status', 'Check'].map(t => h('th', null, t)))),
         h('tbody', null, rows.map(([id, it]) => h('tr', null, h('td', null, it.page), h('td', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, it.num)), h('td', null, lname(id) + ' ' + LESSONS[id].title), h('td', null, typeName[it.type] || it.type), h('td', null, it.audio && !it.audio.file ? h('span', { class: 'pill difficult' }, 'ждёт аудио ' + it.audio.track) : h('span', { class: 'pill mastered' }, 'готово')), h('td', null, how(it))))))),
       h('div', { class: 'sec-h' }, h('h2', null, 'Не извлечено / не предоставлено')),
-      h('ul', { class: 'pending' }, ['Аудио и видео (Student Book и Workbook) — плееры готовы, транскрипты из Teacher’s Guide уже подключены', 'Видео Grammar Animation, Culture video — не предоставлены', 'Фото учебника не переносятся (заменены описанием/значками)', 'Следующие модули — по мере работы'].map(t => h('li', null, '⏳ ' + t))));
+      h('ul', { class: 'pending' }, ['Аудио и видео (Student Book и Workbook) — плееры готовы, транскрипты из Teacher’s Guide уже подключены', 'Видео Grammar Animation, Culture video — не предоставлены', 'Фото учебника не переносятся: вместо них — оригинальные иллюстрации платформы (3D-объекты, рисунки, схемы) и описания', 'Следующие модули — по мере работы'].map(t => h('li', null, '⏳ ' + t))));
   }
   function NotFound() { return h('div', { class: 'page' }, h('h1', null, 'Page not found'), h('a', { class: 'btn primary', href: '#/' }, 'Home')); }
 

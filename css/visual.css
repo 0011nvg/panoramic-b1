@@ -1,0 +1,136 @@
+/* ===== VISUAL LAYER: 3D-объекты, панорамы, иллюстрации к заданиям ===== */
+.pic{display:inline-block;width:1.4em;height:1.4em;object-fit:contain;vertical-align:-.3em;user-select:none;-webkit-user-drag:none}
+.pic-txt{display:inline-block;line-height:1}
+
+/* --- Панорама («окно» с фирменным фоном и парящими 3D-объектами) --- */
+.pano{position:relative;margin:0;overflow:hidden;border-radius:28px;aspect-ratio:4/3;container-type:inline-size;isolation:isolate;border:2px solid var(--ink)}
+.pano-bg{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.pano .pb-sun{fill:rgba(255,255,255,.28)}.pano .pb-ring{fill:none;stroke:rgba(255,255,255,.28);stroke-width:2;stroke-dasharray:4 10}
+.pano .pb-hill2{fill:rgba(255,255,255,.18)}.pano .pb-hill1{fill:rgba(22,22,29,.12)}.pano .pb-dots circle{fill:rgba(255,255,255,.55)}
+.pano.c-blue{background:linear-gradient(150deg,#5B59FF,#3D3BFF 55%,#2B29D6)}
+.pano.c-pink{background:linear-gradient(150deg,#FF79BA,#FF4FA3 55%,#E33A8E)}
+.pano.c-yellow{background:linear-gradient(150deg,#FFE45C,#FFD400 60%,#F5C200)}
+.pano.c-yellow .pb-sun{fill:rgba(255,122,0,.25)}.pano.c-yellow .pb-ring{stroke:rgba(255,122,0,.4)}
+.pano.c-orange{background:linear-gradient(150deg,#FF9A3D,#FF7A00 60%,#F06A00)}
+.pano.c-navy{background:linear-gradient(150deg,#2D3A86,#1F2A6B 60%,#151D4F)}
+.pano.c-green{background:linear-gradient(150deg,#5BC49B,#3DAA82 60%,#2C9270)}
+.pano.c-sepia{background:linear-gradient(150deg,#D8BF95,#BFA275 60%,#A88B5E)}
+.pano.c-sepia .po{filter:sepia(.75) saturate(.8) drop-shadow(0 10px 10px rgba(22,22,29,.25))}
+.po{position:absolute;z-index:var(--z,1);height:auto;transform:translate(-50%,-50%) rotate(var(--r,0deg));filter:drop-shadow(0 12px 12px rgba(22,22,29,.28));animation:bob 6s ease-in-out var(--d,0s) infinite}
+.po.pic-txt{line-height:1}
+@keyframes bob{0%,100%{transform:translate(-50%,-50%) rotate(var(--r,0deg))}50%{transform:translate(-50%,calc(-50% - 7px)) rotate(calc(var(--r,0deg) + 3deg))}}
+
+/* герой урока */
+.lhero.has-pano{grid-template-columns:auto 1fr minmax(220px,300px)}
+.hero-pano{width:100%;max-width:300px;justify-self:end;transform:rotate(2deg);box-shadow:var(--sh)}
+@media (max-width:1020px){.lhero.has-pano{grid-template-columns:auto 1fr 190px}}
+@media (max-width:600px){.lhero.has-pano{grid-template-columns:1fr}.lhero.has-pano .hero-pano{display:block;order:-1;max-width:none;aspect-ratio:16/7;transform:none;border-radius:22px}}
+
+/* обложка модуля */
+.ucover{position:relative;height:150px;border-radius:20px;overflow:hidden;margin:0 0 16px;border:2px solid var(--ink)}
+.ucover.c-blue{background:linear-gradient(120deg,#5B59FF,#3D3BFF)}.ucover.c-pink{background:linear-gradient(120deg,#FF79BA,#FF4FA3)}
+.ucover.c-yellow{background:linear-gradient(120deg,#FFE45C,#FFD400)}.ucover.c-orange{background:linear-gradient(120deg,#FF9A3D,#FF7A00)}
+.uc-bg{position:absolute;inset:0;width:100%;height:100%}.uc-w2{fill:rgba(255,255,255,.2)}.uc-w1{fill:rgba(22,22,29,.12)}.uc-sun{fill:rgba(255,255,255,.28)}
+.uc-o{position:absolute;top:50%;left:calc(6% + var(--i) * 12.5%);width:clamp(48px,9%,92px);height:auto;transform:translate(-50%,-50%) rotate(calc((var(--i) - 3) * 4deg));filter:drop-shadow(0 10px 10px rgba(22,22,29,.3));animation:bob 7s ease-in-out var(--d,0s) infinite}
+.uc-o:nth-child(even){top:42%}
+.uc-tag{position:absolute;left:14px;bottom:12px;background:var(--ink);color:#fff;font-weight:800;font-size:.78rem;padding:4px 12px;border-radius:999px;z-index:3}
+@media (max-width:640px){.ucover{height:120px}.uc-o{width:50px;top:42%;left:calc(10% + var(--i) * 16%)}.uc-o:nth-child(even){top:36%}img.uc-o:nth-of-type(n+7){display:none}.uc-tag{font-size:.7rem}}
+
+/* мини-иконка урока на плитке */
+.lt-code{position:relative}
+.lt-pic{position:absolute;right:-12px;bottom:-12px;width:34px;height:34px;filter:drop-shadow(0 3px 4px rgba(22,22,29,.3));transition:transform .2s}
+.ltile:hover .lt-pic{transform:rotate(-10deg) scale(1.15)}
+
+/* иконки разделов */
+.sec-ic{width:44px;height:44px;flex:none;filter:drop-shadow(0 4px 5px rgba(22,22,29,.18))}
+.lsec-h .sec-ic{margin-right:-2px}
+
+/* карточки «Сегодня», полоса этапов, статистика */
+.tc-pic{position:absolute;right:14px;bottom:12px;width:58px;height:58px;filter:drop-shadow(0 6px 8px rgba(22,22,29,.22));pointer-events:none;transition:transform .25s}
+.tcard2:hover .tc-pic{transform:rotate(-8deg) scale(1.08)}
+.tcard2.with-pic>span:not(.go){padding-right:58px}
+.route-strip li .pic{width:1.35em;height:1.35em;margin-right:2px}
+.stat{position:relative;overflow:hidden}.stat .st-pic{position:absolute;right:10px;top:50%;width:54px;height:54px;transform:translateY(-50%) rotate(8deg);opacity:.95;filter:drop-shadow(0 4px 6px rgba(22,22,29,.25))}
+@media (max-width:420px){.stat .st-pic{width:40px;height:40px}}
+
+/* автозамена значков на 3D */
+.has-pic>.pic{width:100%;height:100%;vertical-align:0}
+.wc-e.has-pic{width:54px;height:54px;margin:2px 0 4px}
+.fc-emo.has-pic{width:96px;height:96px;margin:0 auto 4px;filter:drop-shadow(0 10px 12px rgba(22,22,29,.22))}
+.ms-ic.has-pic{background:none!important;padding:0}
+.ms-ic.has-pic .pic{width:30px;height:30px}
+.bg-ic.has-pic{width:52px;height:52px;display:block;margin:0 auto 4px}
+.badge:not(.got) .bg-ic.has-pic{filter:grayscale(1);opacity:.45}
+.fin-ms li>span.has-pic{display:inline-block;width:26px;height:26px;vertical-align:-7px}
+.wcard{transition:transform .15s}.wcard:hover{transform:translateY(-2px) rotate(-.4deg)}
+
+/* --- Иллюстрации к заданиям --- */
+.ex-visual{margin:6px 0 10px}
+.ex-visual+.ex-photo{margin-top:-2px}
+.pfig{margin:0;border-radius:20px;overflow:hidden;border:2px solid var(--ink);background:#fff;max-width:760px}
+.pfig-in svg{display:block;width:100%;height:auto}
+.pfig.scene{border:0;background:none;overflow:visible}
+.pfig.scene .pano{aspect-ratio:16/8;max-width:760px}
+.pfig.svg-ukMap{max-width:340px}.pfig.svg-poster{max-width:560px}.pfig.svg-boys{max-width:700px}
+.pfig.gram{background:var(--card);border-color:var(--line);max-width:700px;padding:8px}
+.pfig.gram figcaption{font-size:.8rem;color:var(--mute);padding:2px 10px 4px}
+.pfig.heart{position:relative;aspect-ratio:9/5;max-width:720px}
+.pfig.heart .beach-bg{position:absolute;inset:0;width:100%;height:100%}
+.pfig.heart .ht{position:absolute;width:7.2%;height:auto;transform:translate(-50%,-50%) rotate(var(--r,0deg));filter:drop-shadow(0 3px 3px rgba(22,22,29,.3))}
+
+/* доска картинок */
+.pboard{margin:0;display:grid;gap:10px;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));max-width:820px}
+.pboard.cols-4{--cols:4}.pboard.cols-5{--cols:5}.pboard.cols-6{--cols:6}
+.pb-t{position:relative;aspect-ratio:1;border-radius:16px;border:2px solid var(--ink);display:grid;place-items:center;overflow:hidden}
+.pb-t.t1{background:#E4E4FF}.pb-t.t2{background:#FFE1EF}.pb-t.t3{background:#FFF2B3}.pb-t.t4{background:#FFE3CC}.pb-t.t5{background:#D9F0E5}
+.pb-main{width:64%;height:64%;filter:drop-shadow(0 8px 8px rgba(22,22,29,.22))}
+.pb-sub{position:absolute;right:7%;bottom:7%;width:34%;height:34%;filter:drop-shadow(0 4px 5px rgba(22,22,29,.25))}
+.pb-svg{width:86%;height:86%}.pb-svg svg{width:100%;height:100%;display:block}
+.pb-k{position:absolute;left:7px;top:7px;min-width:26px;height:26px;padding:0 6px;border-radius:999px;background:var(--ink);color:#fff;font:700 .8rem/26px var(--disp);text-align:center;z-index:2}
+@media (max-width:760px){.pboard.cols-5,.pboard.cols-6{--cols:4}}
+@media (max-width:480px){.pboard{--cols:3!important;gap:8px}.pb-k{min-width:22px;height:22px;line-height:22px;font-size:.7rem}}
+
+/* две сцены */
+.pduo{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:720px}
+.pduo-p{position:relative}
+.pduo-p .pano{aspect-ratio:4/3}
+.pduo-items{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;place-items:center;padding:8% 6% 14%;z-index:2}
+.pd-o{width:auto;height:78%;max-width:84%;object-fit:contain;filter:drop-shadow(0 10px 10px rgba(22,22,29,.28))}
+.pd-0{grid-column:1/3;height:92%}
+.pduo-l{position:absolute;left:12px;bottom:12px;z-index:3;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 12px;font:700 .82rem var(--disp)}
+
+/* список, который открывает ученик */
+.reveal{margin:0;max-width:520px;background:#FFFDF2;border:2px solid var(--ink);border-radius:18px;padding:14px 16px;background-image:repeating-linear-gradient(transparent 0 33px,#E8E2D4 33px 35px)}
+.rv-h{font-family:var(--disp);font-size:.95rem;margin-bottom:6px}
+.rv-list{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:4px}
+.rv-list li{display:flex;align-items:center;gap:10px;font-weight:700}
+.rv-ic{width:34px;height:34px}
+.rv-m{margin-left:auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;visibility:hidden;font-size:1rem}
+.rv-m.yes{background:var(--ok-bg);color:var(--ok)}.rv-m.no{background:var(--bad-bg);color:var(--bad)}
+.reveal.open .rv-m{visibility:visible}
+
+/* --- Vocabulary: картинки --- */
+.q-pic{display:grid;place-items:center;margin:4px auto 10px;width:150px;height:150px;border-radius:28px;background:radial-gradient(circle at 50% 40%,#fff,#EFEAE0);border:2px solid var(--ink)}
+.q-pic .pic{width:112px;height:112px;filter:drop-shadow(0 10px 12px rgba(22,22,29,.22))}
+.opts.pics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.scene-stage{position:relative;border-radius:24px;overflow:hidden;border:2px solid var(--ink);aspect-ratio:16/9;max-width:860px;margin:10px auto;background:linear-gradient(180deg,#CFE6FF 0 58%,#F1DCAE 58%)}
+.scene-stage .stage-bg{position:absolute;inset:0;width:100%;height:100%}
+.sc-obj{position:absolute;transform:translate(-50%,-50%);width:13%;aspect-ratio:1;border:0;background:none;padding:0;cursor:pointer;border-radius:50%;transition:transform .2s}
+.sc-obj img{width:100%;height:100%;filter:drop-shadow(0 8px 8px rgba(22,22,29,.3));pointer-events:none}
+.sc-obj:hover,.sc-obj:focus-visible{transform:translate(-50%,-50%) scale(1.12)}
+.sc-obj.seen::after{content:"✓";position:absolute;right:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font:800 .72rem/22px var(--body);text-align:center}
+.sc-obj.ok{animation:pop .5s}.sc-obj.ok::after{content:"✓";position:absolute;right:0;top:0;width:24px;height:24px;border-radius:50%;background:var(--ok);color:#fff;font:800 .8rem/24px var(--body);text-align:center}
+.sc-obj.bad{animation:shake .4s}.sc-obj.gone{opacity:.35;pointer-events:none}
+@keyframes pop{50%{transform:translate(-50%,-50%) scale(1.25)}}
+@keyframes shake{25%{transform:translate(calc(-50% - 6px),-50%)}75%{transform:translate(calc(-50% + 6px),-50%)}}
+.sc-say{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:16px;padding:8px 16px;text-align:center;min-width:220px;z-index:5;box-shadow:var(--sh)}
+.sc-say b{font:700 1.1rem var(--disp);display:block}.sc-say span{font-size:.85rem;opacity:.85}
+.sc-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;max-width:860px;margin:0 auto}
+.sc-q{font:700 clamp(1.1rem,3vw,1.5rem) var(--disp)}
+@media (max-width:600px){.sc-obj{width:18%}.sc-say{min-width:0;width:86%}}
+
+/* Board mode и печать: анимации и декор скрыты */
+html.board .hero-pano,html.board .ucover,html.board .lt-pic,html.board .tc-pic,html.board .st-pic{display:none!important}
+@media (prefers-reduced-motion:reduce){.po,.uc-o{animation:none!important}}
+@media print{.hero-pano,.ucover{display:none}}
+@media (max-width:600px){.lhero.has-pano .hero-pano .po{scale:.6}}
