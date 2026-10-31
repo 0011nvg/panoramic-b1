@@ -1,2 +1,13 @@
-# Фото Unsplash для сайта: <имя файла> <URL из download_asset> — скачивает GitHub Actions (.github/workflows/photos.yml)
-test-bike.jpg https://images.unsplash.com/photo-1558410177-183cf64cc773?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+# Фото Unsplash (лицензия Unsplash): <файл> <URL из download_asset>. Скачивает GitHub Actions (.github/workflows/photos.yml)
+bike-messenger.jpg https://images.unsplash.com/photo-1558410177-183cf64cc773?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+bee.jpg https://images.unsplash.com/photo-1712413853163-029f86c1fc2e?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+tai-o.jpg https://images.unsplash.com/photo-1549167006-d7f89e4751a5?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+tyne.jpg https://images.unsplash.com/photo-1660042866417-1963a3cf5ab6?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+florence.jpg https://images.unsplash.com/photo-1523196082804-1aa0f7b9ba42?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+salkantay.jpg https://images.unsplash.com/photo-1718120043239-20cc8456344d?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+redwoods.jpg https://images.unsplash.com/photo-1562633243-28d2b1556b13?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+beach-bottle.jpg https://images.unsplash.com/photo-1588803103006-2822e4b2619d?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+wood-thrush.jpg https://images.unsplash.com/photo-1709807465351-780f96716de8?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+rocket.jpg https://images.unsplash.com/photo-1517976487492-5750f3195933?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+photographer.jpg https://images.unsplash.com/photo-1601934025804-c631e2777f26?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
+bedroom.jpg https://images.unsplash.com/photo-1768077712695-25e3a69b4dc7?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
