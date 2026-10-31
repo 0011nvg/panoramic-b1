@@ -10,3 +10,4 @@
 2026-10-31T08:20Z · e4-16-8-path: ошибка Your CellCog account is out of credits, so this request didn't run: the recommended way to keep going is "Subscribe" (https://cellcog.ai/profile?tab=billing&topup=1&plan=1), with a first-month offer o
 2026-10-31T08:20Z · e5-17-5-teens: ошибка Your CellCog account is out of credits, so this request didn't run: the recommended way to keep going is "Subscribe" (https://cellcog.ai/profile?tab=billing&topup=1&plan=1), with a first-month offer o
 2026-10-31T08:20Z · e10-37-1-marathon: ошибка Your CellCog account is out of credits, so this request didn't run: the recommended way to keep going is "Subscribe" (https://cellcog.ai/profile?tab=billing&topup=1&plan=1), with a first-month offer o
+2026-10-31T08:21Z · e9-33-1-science: ошибка Your CellCog account is out of credits, so this request didn't run: the recommended way to keep going is "Subscribe" (https://cellcog.ai/profile?tab=billing&topup=1&plan=1), with a first-month offer o
