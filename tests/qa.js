@@ -38,6 +38,7 @@ const results = []; const ok = (name, cond, info) => { results.push([cond ? 'PAS
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e))); page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(BASE + '#/lesson/u1-1'); await page.waitForSelector('.ex');
   // turn tutor mode on
+  await page.evaluate(() => sessionStorage.setItem('tutorUnlock', '1')); // тест: вход без кода (код в репозитории не хранится)
   await page.click('.tmode'); await page.waitForTimeout(100);
   const ids = await page.$$eval('.ex', els => els.map(e => [e.dataset.id, e.dataset.type]));
   for (const [id] of ids) {

@@ -135,3 +135,4 @@ html.board .hero-pano,html.board .ucover,html.board .lt-pic,html.board .tc-pic,h
 @media print{.hero-pano,.ucover{display:none}}
 @media (max-width:600px){.lhero.has-pano .hero-pano .po{scale:.6}}
 .pfig.photo{max-width:760px;background:var(--ink)}.pfig.photo img{display:block;width:100%;height:auto;max-height:520px;object-fit:contain;background:#F4F1EA}.pfig.photo figcaption{font-size:.72rem;color:#d9d6ce;padding:5px 12px}
+.bad-t{color:var(--bad);font-weight:700}

@@ -7,6 +7,7 @@ const BASE = process.argv[2] || 'http://localhost:8765/';
   const errs = []; page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error' || /TapFind/.test(m.text())) errs.push(m.text()); });
   await page.goto(BASE); await page.waitForSelector('.hero');
   let ids = process.argv.slice(3); if (!ids.length) ids = await page.evaluate(() => BOOK.units.find(u => u.id === 'u0').lessons);
+  await page.evaluate(() => sessionStorage.setItem('tutorUnlock', '1')); // тест: вход без кода (код в репозитории не хранится)
   await page.click('.tmode');
   for (const L of ids) {
     await page.evaluate(h => { location.hash = h; }, '#/lesson/' + L); await page.waitForTimeout(250);

@@ -25,7 +25,7 @@
     const p = Profiles.ensure();
     const nav = [['#/', 'Lessons'], ['#/vocab', 'Vocabulary Lab'], ['#/revision', 'Revision'], ['#/progress', 'My Progress'], ['#/tutor', 'Tutor Mode']];
     const cur = location.hash || '#/';
-    const tbtn = h('button', { class: 'tmode', 'aria-pressed': String(Tutor.on()), onclick: () => { Tutor.set(!Tutor.on()); tbtn.setAttribute('aria-pressed', String(Tutor.on())); toast(Tutor.on() ? 'Tutor mode ON — видны заметки, ключи и оценки' : 'Tutor mode OFF'); } }, h('span', { class: 'dot', 'aria-hidden': 'true' }), 'Tutor');
+    const tbtn = h('button', { class: 'tmode', 'aria-pressed': String(Tutor.on()), title: 'Режим преподавателя (по коду)', onclick: async () => { if (!Tutor.on() && !(await Core.TutorLock.request())) return; Tutor.set(!Tutor.on()); if ((location.hash || '').startsWith('#/tutor')) setTimeout(route, 0); tbtn.setAttribute('aria-pressed', String(Tutor.on())); toast(Tutor.on() ? 'Tutor mode ON — видны заметки, ключи и оценки' : 'Tutor mode OFF'); } }, h('span', { class: 'dot', 'aria-hidden': 'true' }), 'Tutor');
     const menuBtn = h('button', { class: 'menu-btn', 'aria-label': 'Меню', 'aria-expanded': 'false', onclick: () => { const o = navEl.classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(o)); } }, '☰');
     const navEl = h('nav', { class: 'nav', 'aria-label': 'Главное меню' }, nav.map(([href, l]) => h('a', { href, class: (cur === href || (href !== '#/' && cur.startsWith(href))) ? 'on' : null, onclick: () => navEl.classList.remove('open') }, l)));
     const hd = document.getElementById('hdr'); hd.innerHTML = '';
@@ -296,12 +296,18 @@
 
   /* ---------- Tutor ---------- */
   function TutorPage() {
+    if (!Core.TutorLock.unlocked()) {
+      return h('div', { class: 'page' }, h('div', { class: 'eyebrow' }, 'Tutor Mode'), h('h1', null, '🔒 Только для преподавателя'),
+        h('p', { class: 'lead' }, 'Здесь профили учеников, ключи и настройки. Чтобы войти, введите код преподавателя.'),
+        h('div', { class: 'row' }, h('button', { class: 'btn primary lg', onclick: async () => { if (await Core.TutorLock.request()) route(); } }, 'Ввести код'), h('a', { class: 'btn ghost lg', href: '#/' }, '← К урокам')));
+    }
     const list = Profiles.list(); const cur = Profiles.currentId(); const d = Store.data();
     const asks = []; UNIT.lessons.forEach(id => allItems(id).forEach(it => { const e = d.ex[it.id]; if (e && e.ask) asks.push([id, it, e.ask]); }));
     const audio = []; UNIT.lessons.forEach(id => allItems(id).forEach(it => { if (it.audio) audio.push([id, it]); }));
     return h('div', { class: 'page' }, h('div', { class: 'eyebrow' }, 'Tutor Mode'), h('h1', null, 'Tutor ', h('span', { class: 'hl-blue' }, 'desk')),
       h('div', { class: 'tcard' }, h('label', { class: 'switch' }, h('input', { type: 'checkbox', checked: Tutor.on() || null, onchange: e => { Tutor.set(e.target.checked); header(); } }), h('span', null, 'Режим преподавателя: заметки, ключи («Показать ключ»), чек-листы, комментарии')),
-        h('p', { class: 'muted small' }, 'Это режим отображения, а не защита: на общем устройстве ученик тоже может его включить.'),
+        h('p', { class: 'muted small' }, 'Вход по коду. Режим выключается сам, когда закрывается вкладка. Уходя, нажмите «Выйти».'),
+        h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => { Core.TutorLock.lock(); toast('Tutor mode закрыт'); route(); } }, '🔒 Выйти из режима преподавателя')),
         h('label', { class: 'switch' }, h('input', { type: 'checkbox', checked: Board.on() || null, onchange: e => { Board.set(e.target.checked); header(); } }), h('span', null, 'Board mode: крупный шрифт для интерактивной доски, без XP, звёзд и Кекса')),
         h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => Find() }, '⌕ Найти упражнение'), h('span', { class: 'muted small' }, 'или клавиша «/» на любой странице: «13 4» = с. 13, упр. 4'))),
       h('div', { class: 'sec-h' }, h('h2', null, 'Students on this device')),

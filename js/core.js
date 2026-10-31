@@ -165,11 +165,46 @@
   function download(name, text, type) { const b = new Blob([text], { type: type || 'application/json' }); const a = h('a', { href: URL.createObjectURL(b), download: name }); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
 
   /* ---------- Tutor mode (display only) ---------- */
-  const Tutor = { on() { return !!LS.get('tutor', false); }, set(v) { LS.set('tutor', !!v); document.documentElement.classList.toggle('tutor', !!v); } };
+  /* Код преподавателя: хранится только хэш. Сменить код — tools/tutor-code.md.
+     Это защита «от учеников», а не от взломщика: сайт статический. */
+  const TUTOR_HASH = '7fef38690bece016743cd10c985b60710700d05581729394b46dc72644922934', TUTOR_FNV = 'e897088c';
+  const SS = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { if (v == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
+  const fnv = s => { let x = 2166136261; for (const c of s) { x ^= c.charCodeAt(0); x = Math.imul(x, 16777619) >>> 0; } return x.toString(16); };
+  async function checkCode(code) {
+    const s = 'panoramic-b1:' + String(code || '').trim();
+    if (window.crypto && crypto.subtle) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('') === TUTOR_HASH; }
+    return fnv(s) === TUTOR_FNV;
+  }
+  const TutorLock = {
+    unlocked() { return SS.get('tutorUnlock') === '1'; },
+    lock() { SS.set('tutorUnlock', null); Tutor.set(false); },
+    ask() {
+      return new Promise(res => {
+        let tries = 0;
+        const inp = h('input', { class: 'inp big', type: 'password', inputmode: 'numeric', autocomplete: 'off', 'aria-label': 'Код преподавателя', maxlength: 40 });
+        const msg = h('p', { class: 'muted small', role: 'status' }, 'Режим преподавателя показывает ключи и заметки. Введите код.');
+        const close = v => { ov.remove(); document.removeEventListener('keydown', esc); res(v); };
+        const esc = e => { if (e.key === 'Escape') close(false); };
+        const go = async () => {
+          if (await checkCode(inp.value)) { SS.set('tutorUnlock', '1'); close(true); return; }
+          tries++; inp.value = ''; msg.textContent = 'Неверный код.' + (tries >= 3 ? ' Подождите 10 секунд.' : ''); msg.className = 'small bad-t';
+          if (tries >= 3) { inp.disabled = true; setTimeout(() => { inp.disabled = false; inp.focus(); }, 10000); } else inp.focus();
+        };
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+        const ov = h('div', { class: 'modal-ov lock-ov', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Код преподавателя' },
+          h('div', { class: 'modal' }, h('h3', null, '🔒 Tutor mode'), msg, inp,
+            h('div', { class: 'row end' }, h('button', { class: 'btn ghost', onclick: () => close(false) }, 'Отмена'), h('button', { class: 'btn primary', onclick: go }, 'Войти'))));
+        document.body.appendChild(ov); document.addEventListener('keydown', esc); inp.focus();
+      });
+    },
+    async request() { if (!this.unlocked() && !(await this.ask())) return false; return true; }
+  };
+  /* Режим включается только после ввода кода в этой вкладке; при закрытии вкладки — выключается */
+  const Tutor = { on() { return !!LS.get('tutor', false) && TutorLock.unlocked(); }, set(v) { v = !!v && TutorLock.unlocked(); LS.set('tutor', v); document.documentElement.classList.toggle('tutor', v); } };
 
   /* ---------- Content index ---------- */
   function allItems(lessonId) { const L = LESSONS[lessonId]; const out = []; L.sections.forEach(s => s.items.forEach(it => out.push(Object.assign({ _section: s.id }, it)))); return out; }
   function gradable(it) { return !['discuss', 'review', 'rank', 'interview', 'writing', 'reference', 'checklist', 'scores'].includes(it.type); }
 
-  window.Core = { LS, Profiles, Store, norm, variants, matches, closeTo, h, esc, md, shuffle, toast, confirmBox, promptBox, download, Tutor, allItems, gradable };
+  window.Core = { LS, Profiles, Store, norm, variants, matches, closeTo, h, esc, md, shuffle, toast, confirmBox, promptBox, download, Tutor, TutorLock, allItems, gradable };
 })();
