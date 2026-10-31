@@ -5,16 +5,29 @@ from cellcog import CellCogClient
 cfg = json.load(open('tools/gen-prompts.json'))
 os.makedirs('assets/gen', exist_ok=True)
 state = os.environ.get('CELLCOG_STATE_DIR', '/tmp/cellcog')
+from datetime import datetime, timezone
+def status(t):
+    open('assets/gen/STATUS.md', 'a').write(datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%MZ') + ' · ' + t + '\n')
+def commit(msg):
+    subprocess.run('git add assets/gen && git commit -qm "' + msg + '" && git pull -q --rebase && git push -q', shell=True)
 client = CellCogClient(agent_provider='claude-code')
+try:
+    st = client.get_account_status(); status('ключ найден, аккаунт: ' + str(st.get('configured')) )
+except Exception as e:
+    status('ключ не принят: ' + str(e)[:200]); commit('CellCog status (auto)'); sys.exit(0)
+commit('CellCog status (auto)')
 for item in cfg['images']:
     out = f"assets/gen/{item['name']}.webp"
     if os.path.exists(out): continue
     before = set(glob.glob(state + '/**/*.*', recursive=True))
     prompt = item['prompt'] + '\n\nStyle: ' + cfg['_style'] + '\nGenerate exactly ONE image.'
-    res = client.create_chat(prompt=prompt, task_label=item['name'], chat_mode='agent', timeout=1500)
+    try:
+      res = client.create_chat(prompt=prompt, task_label=item['name'], chat_mode='agent', timeout=1500)
+    except Exception as e:
+      status(item['name'] + ': ошибка ' + str(e)[:200]); commit('CellCog status (auto)'); continue
     print(item['name'], '→', (res.get('message') or '')[:300])
     new = [f for f in set(glob.glob(state + '/**/*.*', recursive=True)) - before if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
-    if not new: print('  no image file found'); continue
+    if not new: status(item['name'] + ': картинка не найдена в ответе'); commit('CellCog status (auto)'); continue
     src = max(new, key=os.path.getsize)
     subprocess.run(['cwebp', '-quiet', '-q', '72', '-resize', '1400', '0', src, '-o', out], check=True)
-    print('  saved', out)
+    status(item['name'] + ': готово'); commit('Add generated illustration ' + item['name'] + ' (auto)')

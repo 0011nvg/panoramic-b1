@@ -1,28 +1,31 @@
 name: Generate illustrations (CellCog)
 on:
   push:
-    paths: ['tools/gen-prompts.json']
+    paths: ['tools/gen-prompts.json', '.github/workflows/generate.yml', 'tools/generate.py']
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: cellcog-generate
+  cancel-in-progress: false
 jobs:
   gen:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       CELLCOG_API_KEY: ${{ secrets.CELLCOG_API_KEY }}
       CELLCOG_STATE_DIR: /tmp/cellcog
     steps:
       - uses: actions/checkout@v4
-      - name: Check key
-        id: key
-        run: if [ -z "$CELLCOG_API_KEY" ]; then echo "Нет секрета CELLCOG_API_KEY — пропуск"; echo "ok=0" >> $GITHUB_OUTPUT; else echo "ok=1" >> $GITHUB_OUTPUT; fi
-      - if: steps.key.outputs.ok == '1'
-        run: |
-          sudo apt-get install -y -qq webp >/dev/null
-          pip install -q -U cellcog
-          python tools/generate.py
-      - if: steps.key.outputs.ok == '1'
+      - name: Generate
         run: |
           git config user.name "github-actions[bot]"; git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add assets/gen && git commit -m "Add generated illustrations (CellCog)" && git push || echo "nothing to commit"
+          mkdir -p assets/gen
+          if [ -z "$CELLCOG_API_KEY" ]; then
+            echo "$(date -u +%FT%TZ) · секрет CELLCOG_API_KEY НЕ найден — генерация пропущена" > assets/gen/STATUS.md
+          else
+            sudo apt-get install -y -qq webp >/dev/null
+            pip install -q -U cellcog
+            python tools/generate.py || echo "$(date -u +%FT%TZ) · ошибка скрипта, см. лог" >> assets/gen/STATUS.md
+          fi
+          git add assets/gen && git commit -qm "Generation status (auto)" && git pull -q --rebase && git push -q || echo "nothing to commit"
