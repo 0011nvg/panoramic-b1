@@ -1,0 +1,2 @@
+# Фото Unsplash для сайта: <имя файла> <URL из download_asset> — скачивает GitHub Actions (.github/workflows/photos.yml)
+test-bike.jpg https://images.unsplash.com/photo-1558410177-183cf64cc773?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb
