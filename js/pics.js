@@ -114,7 +114,10 @@
     const vs = V(); const spec = vs.items && vs.items[it.id];
     const gr = vs.grammar && vs.grammar[it.id];
     let el = null;
-    if (spec) {
+    if (spec && spec.photo) {
+      el = h('figure', { class: 'pfig photo' }, h('img', { src: 'assets/photos/' + spec.photo + '.webp', alt: spec.palt || spec.alt || '', loading: 'lazy', decoding: 'async', width: 1200, height: 800 }),
+        h('figcaption', null, 'Фото: ' + spec.credit + ' · Unsplash'));
+    } else if (spec) {
       if (spec.k === 'board') el = board(spec, it);
       else if (spec.k === 'pano') el = h('div', { class: 'pfig scene' }, pano(spec, { scene: true }));
       else if (spec.k === 'duo') el = duo(spec);

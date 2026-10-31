@@ -35,7 +35,7 @@ const res = []; const ok = (n, c, i) => res.push([c ? 'PASS' : 'FAIL', n, i || '
     }
     for (const [L, id] of items) {
       await p.evaluate(h => { location.hash = h; }, '#/lesson/' + L + '/' + id); await p.waitForTimeout(120);
-      const r = await p.evaluate(id => { const v = document.querySelector('#ex-' + id + ' .ex-visual'); if (!v) return null; const lab = v.querySelector('[aria-label]'); return { label: lab ? lab.getAttribute('aria-label') : '', svgImgs: [...v.querySelectorAll('image')].map(i => i.getAttribute('href')) }; }, id);
+      const r = await p.evaluate(id => { const v = document.querySelector('#ex-' + id + ' .ex-visual'); if (!v) return null; const lab = v.querySelector('[aria-label]'); const im = v.querySelector('img[alt]'); return { label: lab ? lab.getAttribute('aria-label') : im ? im.getAttribute('alt') : '', svgImgs: [...v.querySelectorAll('image')].map(i => i.getAttribute('href')) }; }, id);
       ok(vp.n + ' visual rendered ' + id, !!r); if (!r) continue;
       if (vp.n === 'desktop') { ok('alt text ' + id, r.label && r.label.length > 3, r.label);
         for (const s of r.svgImgs) { const st = await p.evaluate(u => fetch(u).then(x => x.status), s); ok('svg image ' + id + ' ' + s, st === 200, st); } }

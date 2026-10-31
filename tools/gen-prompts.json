@@ -1,0 +1,17 @@
+{
+  "_style": "Modern editorial digital illustration for an English learning platform for teenagers (B1). Clean shapes, soft grain texture, gentle shadows, warm light. Brand palette: electric blue #3D3BFF, pink #FF4FA3, yellow #FFD400, orange #FF7A00, cream background #F7F4ED, graphite outlines. Not childish, not photorealistic. No text, no letters, no logos, no watermarks. 16:9 landscape, 2K.",
+  "images": [
+    { "name": "u2o-1-clock", "prompt": "A large golden ornate clock face with rippling concentric gold surface and a ring of small blue lights, a big metal grasshopper sitting on top of the clock, dark navy background, mysterious and impressive." },
+    { "name": "u24-1-library", "prompt": "Two teenage school students in school uniform (blazers) talking and laughing quietly in a school library between bookshelves, one is telling a funny story." },
+    { "name": "u3o-1-heart", "prompt": "View from above of a sandy beach: a big heart shape laid out on the sand made only of plastic rubbish collected from the beach (bottles, cups, lids, flip-flops), the sea at the top edge." },
+    { "name": "u33-1-placard", "prompt": "Young people at a peaceful climate march, one teenager in the centre holds up a handmade cardboard placard with a drawing of planet Earth with an ice cube; colourful crowd, optimistic mood. The placard has no readable words." },
+    { "name": "e2-8-7-family", "prompt": "A big modern blended family of three generations posing together for a photo in a living room: grandparents, parents, a stepmother, teenagers and a baby, happy and relaxed." },
+    { "name": "e6-23-2-camping", "prompt": "A family camping trip: a green tent in a grassy field near woods, a friendly brown horse standing next to the tent, a small campfire, hills in the background, evening light." },
+    { "name": "e8-29-1-robinhood", "prompt": "A bronze statue of Robin Hood drawing his bow in front of an old stone castle wall, green trees around, tourists' perspective." },
+    { "name": "e4-16-8-path", "prompt": "A narrow path cut into the side of a huge rocky canyon with a safety railing; three children with school backpacks walk carefully along it on their way to school, a very deep drop to a river far below." },
+    { "name": "e5-17-5-teens", "prompt": "Collage of four scenes of teenagers' free time in one image: a teen filming a funny video on a phone, two friends baking bread in a kitchen, a school rock band playing their first concert, a girl upcycling clothes at a sewing machine." },
+    { "name": "e10-37-1-marathon", "prompt": "Split image: on the left a marathon runner in 1908 in an old-fashioned outfit and leather shoes, sepia tones; on the right a modern elite marathon runner in high-tech running shoes, bright colours." },
+    { "name": "e9-33-1-science", "prompt": "Advances in science: a futuristic but friendly composition with lab-grown food, digital money, a medical robot, a 3D-printed house and an electric flying taxi, arranged like a museum showcase." },
+    { "name": "e12-45-1-population", "prompt": "A crowded colourful planet Earth with growing cities, farms and fields, and wild animals at the edges, showing population growth and its effect on nature." }
+  ]
+}
