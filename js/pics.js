@@ -16,9 +16,19 @@
   function img(e, o) {
     o = o || {}; const s = src(e);
     if (!s) return h('span', { class: 'pic-txt ' + (o.cls || ''), 'aria-hidden': o.alt ? null : 'true', role: o.alt ? 'img' : null, 'aria-label': o.alt || null }, e);
-    return h('img', { class: 'pic ' + (o.cls || ''), src: s, alt: o.alt || '', width: o.size || 64, height: o.size || 64, loading: o.eager ? 'eager' : 'lazy', decoding: 'async', draggable: 'false', style: o.style || null });
+    const el = h('img', { class: 'pic ' + (o.cls || ''), src: s, alt: o.alt || '', width: o.size || 64, height: o.size || 64, loading: o.eager ? 'eager' : 'lazy', decoding: 'async', draggable: 'false', style: o.style || null });
+    el.dataset.emo = e; el.onerror = () => broken(el);
+    return el;
   }
-  const imgHTML = (e, cls, extra) => { const s = src(e); return s ? '<img class="pic ' + (cls || '') + '" src="' + s + '" alt="" width="64" height="64" loading="lazy" decoding="async" draggable="false"' + (extra || '') + '>' : '<span class="pic-txt ' + (cls || '') + '" aria-hidden="true">' + esc(e) + '</span>'; };
+  /* Файл не загрузился: ошибка видна в консоли (её ловят автотесты), а ученик вместо пустой рамки видит тот же смысл эмодзи-текстом */
+  function broken(el) {
+    if (el.dataset.broken) return; el.dataset.broken = '1';
+    console.error('[Pics] Не загрузилась картинка: ' + el.getAttribute('src') + ' — проверьте файл и регистр букв в имени');
+    const e = el.dataset.emo; if (!e) { el.classList.add('pic-broken'); return; }
+    const sp = h('span', { class: el.className.replace(/\bpic\b/, 'pic-txt pic-broken'), 'aria-hidden': el.alt ? null : 'true', role: el.alt ? 'img' : null, 'aria-label': el.alt || null }, e);
+    sp.style.cssText = el.style.cssText; el.replaceWith(sp);
+  }
+  const imgHTML = (e, cls, extra) => { const s = src(e); return s ? '<img class="pic ' + (cls || '') + '" src="' + s + '" alt="" width="64" height="64" loading="lazy" decoding="async" draggable="false" data-emo="' + esc(e) + '" onerror="Pics.broken(this)"' + (extra || '') + '>' : '<span class="pic-txt ' + (cls || '') + '" aria-hidden="true">' + esc(e) + '</span>'; };
 
   /* ---------- Панорама: окно с фоном фирменного цвета и «парящими» 3D-объектами ----------
      Позиции: [x %, y %, размер в % ширины, поворот°]                                      */
@@ -115,7 +125,7 @@
     const gr = vs.grammar && vs.grammar[it.id];
     let el = null;
     if (spec && spec.photo) {
-      el = h('figure', { class: 'pfig photo' }, h('img', { src: 'assets/photos/' + spec.photo + '.webp', alt: spec.palt || spec.alt || '', loading: 'lazy', decoding: 'async', width: 1200, height: 800 }),
+      el = h('figure', { class: 'pfig photo' }, h('img', { src: 'assets/photos/' + spec.photo + '.webp', alt: spec.palt || spec.alt || '', loading: 'lazy', decoding: 'async', width: 1200, height: 800, onerror: ev => broken(ev.target) }),
         h('figcaption', null, 'Фото: ' + spec.credit + ' · Unsplash'));
     } else if (spec) {
       if (spec.k === 'board') el = board(spec, it);
@@ -157,5 +167,5 @@
   const mo = new MutationObserver(() => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; upgrade(document); }); });
   document.addEventListener('DOMContentLoaded', () => { upgrade(document); mo.observe(document.body, { childList: true, subtree: true }); });
 
-  window.Pics = { key, src, has, img, imgHTML, pano, board, forItem, sectionIcon, lessonPano, lessonIcon, unitCover, wordPic, upgrade, LAY };
+  window.Pics = { key, src, has, img, imgHTML, broken, pano, board, forItem, sectionIcon, lessonPano, lessonIcon, unitCover, wordPic, upgrade, LAY };
 })();

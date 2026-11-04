@@ -21,7 +21,7 @@ const BASE = process.argv[2] || 'http://localhost:8765/';
   const m = await b.newContext({ viewport: { width: 375, height: 760 }, isMobile: true, hasTouch: true }); const mp = await m.newPage();
   mp.on('pageerror', e => errs.push(String(e)));
   await mp.goto(BASE); await mp.waitForSelector('.hero');
-  for (const L of ids) { await mp.evaluate(h => { location.hash = h; }, '#/lesson/' + L); await mp.waitForTimeout(250); const ov = await mp.evaluate(() => document.documentElement.scrollWidth - innerWidth); ok('375px no h-scroll ' + L, ov <= 0, ov + 'px'); }
+  for (const L of ids) { await mp.evaluate(h => { location.hash = h; }, '#/lesson/' + L); await mp.waitForTimeout(250); const ov = await mp.evaluate(() => document.documentElement.scrollWidth - Math.min(innerWidth, screen.width)); ok('375px no h-scroll ' + L, ov <= 0, ov + 'px'); }
   ok('no console errors', errs.length === 0, errs.join(' | '));
   await b.close(); res.filter(r => r[0] === 'FAIL').forEach(r => console.log(r.join('  '))); console.log(res.filter(r => r[0] === 'PASS').length + '/' + res.length + ' passed');
 })();

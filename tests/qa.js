@@ -17,7 +17,7 @@ const results = []; const ok = (name, cond, info) => { results.push([cond ? 'PAS
     const routes = ['#/'].concat(lessons.map(l => '#/lesson/' + l)).concat(['#/vocab', '#/vocab/u2', '#/vocab/u3-2', '#/vocab/u1-opener', '#/vocab/due', '#/vocab/hard', '#/revision', '#/progress', '#/tutor', '#/coverage']);
     for (const r of routes) {
       await page.evaluate(h => { location.hash = h; }, r); await page.waitForTimeout(250);
-      const ov = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      const ov = await page.evaluate(() => document.documentElement.scrollWidth - Math.min(innerWidth, screen.width));
       ok(vp.name + ' no horizontal scroll ' + r, ov <= 0, 'overflow ' + ov + 'px');
       const broken = await page.evaluate(() => [...document.images].filter(i => i.complete && i.naturalWidth === 0).map(i => i.src));
       ok(vp.name + ' images ' + r, broken.length === 0, broken.join(','));

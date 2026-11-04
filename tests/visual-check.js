@@ -26,7 +26,7 @@ const res = []; const ok = (n, c, i) => res.push([c ? 'PASS' : 'FAIL', n, i || '
       await p.evaluate(async () => { for (const el of document.querySelectorAll('.ex-visual,.hero-pano,.lsec-h')) { el.scrollIntoView(); await new Promise(r => setTimeout(r, 30)); } });
       await p.waitForTimeout(500);
       const r = await p.evaluate(() => ({
-        ov: document.documentElement.scrollWidth - innerWidth,
+        ov: document.documentElement.scrollWidth - Math.min(innerWidth, screen.width),
         broken: [...document.images].filter(i => i.complete && i.naturalWidth === 0).map(i => i.src),
         hero: !!document.querySelector('.hero-pano')
       }));
@@ -42,7 +42,7 @@ const res = []; const ok = (n, c, i) => res.push([c ? 'PASS' : 'FAIL', n, i || '
     }
     for (const r of ['#/', '#/vocab/u1-2/pic', '#/vocab/u1-2/scene', '#/vocab/u0-4/flash', '#/progress']) {
       await p.evaluate(h => { location.hash = h; }, r); await p.waitForTimeout(500);
-      const ov = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      const ov = await p.evaluate(() => document.documentElement.scrollWidth - Math.min(innerWidth, screen.width));
       ok(vp.n + ' no overflow ' + r, ov <= 0, ov + 'px');
     }
     ok(vp.n + ' console errors', errs.length === 0, errs.join(' | ')); ok(vp.n + ' failed requests', bad.length === 0, bad.join(' | '));

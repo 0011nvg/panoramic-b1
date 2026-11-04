@@ -172,7 +172,7 @@ html:not(.tutor) .tutor-only{display:none!important}
 /* gaps */
 .gline{margin:10px 0;line-height:2.3}
 .gline.numbered{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;line-height:2.1}.ln{font-family:var(--disp);min-width:1.6em}
-.gapwrap{white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.gapwrap{white-space:nowrap;display:inline-flex;align-items:center;gap:4px;max-width:100%}
 .gn{font-size:.7rem;font-weight:800;color:var(--blue-d)}
 .gap{border:none;border-bottom:2.5px solid var(--ink);background:#fff;border-radius:6px 6px 0 0;padding:4px 8px;font-size:1rem;font-weight:700;color:var(--blue-d);max-width:62vw;min-width:5ch}
 .gap:focus{outline:none;background:#EEF;border-bottom-color:var(--blue)}
@@ -338,7 +338,7 @@ code{background:var(--paper2);padding:1px 6px;border-radius:6px;font-size:.85em}
 .ex-photo{font-size:.88rem;color:var(--mute);font-style:italic;margin:4px 0 8px}
 .intro-list{list-style:none;padding:12px 16px;margin:0 0 12px;background:#F1F0FF;border-radius:12px;display:grid;gap:4px;font-size:.95rem}
 .gl-body{flex:1;min-width:0}
-.gsel{width:auto;display:inline-block;padding:4px 8px;font-weight:700;color:var(--blue-d)}
+.gsel{width:auto;display:inline-block;padding:4px 8px;font-weight:700;color:var(--blue-d);min-width:0;max-width:100%;text-overflow:ellipsis}
 .gsel.ok{border-color:var(--ok);background:var(--ok-bg)}.gsel.bad{border-color:var(--bad);background:var(--bad-bg)}
 .gap.given{border-bottom-style:dashed;color:var(--mute);background:transparent}
 .gap.free{border-bottom:2px dotted var(--mute);font-weight:500;color:var(--ink2)}

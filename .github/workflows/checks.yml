@@ -1,0 +1,56 @@
+name: Site checks
+# Автопроверка сайта. Если что-то сломалось, коммит на GitHub получает красный ✗, и приходит письмо.
+#  · static  — все файлы, на которые ссылается сайт, существуют с точным регистром имени; ключи ответов
+#  · browser — все уроки в Chrome на 375 / 820 / 1366 px: картинки грузятся и не вылезают из рамок,
+#              нет горизонтальной прокрутки, нет ошибок в консоли, каждое задание с ключом даёт 100 %
+#  · live    — после публикации GitHub Pages каждый файл опубликованного сайта отдаётся (код 200)
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'tools/**']
+  pull_request:
+  page_build:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static:
+    if: github.event_name != 'page_build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node tests/assets-check.js
+      - run: node tests/answers.js
+
+  browser:
+    if: github.event_name != 'page_build'
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Playwright
+        run: npm i --no-save playwright@1 && npx playwright install --with-deps chromium
+      - name: Local server
+        run: (python3 -m http.server 8765 >/dev/null 2>&1 &) && sleep 2
+      - run: node tests/layout-check.js http://localhost:8765/
+      - run: node tests/visual-check.js http://localhost:8765/
+      - run: node tests/entry-check.js http://localhost:8765/
+      - run: node tests/qa.js http://localhost:8765/ /tmp/shots
+
+  live:
+    if: github.event_name == 'page_build' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Wait for the CDN
+        run: sleep 60
+      - run: node tests/assets-check.js "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
