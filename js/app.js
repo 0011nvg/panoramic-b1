@@ -8,7 +8,7 @@
   const UNIT = { get lessons() { return ALL(); } };
   const unitOf = id => BOOK.units.find(u => u.lessons.includes(id));
   const ulab = u => u.label || 'Unit ' + u.num;
-  const lname = id => { const L = LESSONS[id]; const u = unitOf(id); return u.entry ? L.code : (['GR', 'WB'].includes(L.code) || L.kicker === 'Unit opener' ? 'U' + u.num + ' ' : '') + (L.kicker === 'Unit opener' ? 'Opener' : L.code); };
+  const lname = id => LESSONS[id].code;
   const unitWordsOf = uid => VOCAB.filter(v => LESSONS[v.lesson] && LESSONS[v.lesson].unit === uid);
   const lessonWords = id => VOCAB.filter(v => v.lesson === id);
   const unitWords = () => VOCAB.slice();
@@ -23,9 +23,9 @@
   /* ---------- header ---------- */
   function header() {
     const p = Profiles.ensure();
-    const nav = [['#/', 'Lessons'], ['#/vocab', 'Vocabulary Lab'], ['#/revision', 'Revision'], ['#/progress', 'My Progress'], ['#/tutor', 'Tutor Mode']];
+    const nav = [['#/', 'Course'], ['#/vocab', 'Vocabulary Lab'], ['#/revision', 'Revision'], ['#/progress', 'My Progress'], ['#/tutor', 'Teacher']];
     const cur = location.hash || '#/';
-    const tbtn = h('button', { class: 'tmode', 'aria-pressed': String(Tutor.on()), title: 'Режим преподавателя (по коду)', onclick: async () => { if (!Tutor.on() && !(await Core.TutorLock.request())) return; Tutor.set(!Tutor.on()); if ((location.hash || '').startsWith('#/tutor')) setTimeout(route, 0); tbtn.setAttribute('aria-pressed', String(Tutor.on())); toast(Tutor.on() ? 'Tutor mode ON — видны заметки, ключи и оценки' : 'Tutor mode OFF'); } }, h('span', { class: 'dot', 'aria-hidden': 'true' }), 'Tutor');
+    const tbtn = h('button', { class: 'tmode', 'aria-pressed': String(Tutor.on()), title: 'Режим учителя (по коду)', onclick: async () => { if (!Tutor.on() && !(await Core.TutorLock.request())) return; Tutor.set(!Tutor.on()); if ((location.hash || '').startsWith('#/tutor')) setTimeout(route, 0); tbtn.setAttribute('aria-pressed', String(Tutor.on())); toast(Tutor.on() ? 'Режим учителя включён: видны ключи, образцы и заметки' : 'Режим ученика'); } }, h('span', { class: 'dot', 'aria-hidden': 'true' }), 'Teacher');
     const menuBtn = h('button', { class: 'menu-btn', 'aria-label': 'Меню', 'aria-expanded': 'false', onclick: () => { const o = navEl.classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(o)); } }, '☰');
     const navEl = h('nav', { class: 'nav', 'aria-label': 'Главное меню' }, nav.map(([href, l]) => h('a', { href, class: (cur === href || (href !== '#/' && cur.startsWith(href))) ? 'on' : null, onclick: () => navEl.classList.remove('open') }, l)));
     const hd = document.getElementById('hdr'); hd.innerHTML = '';
@@ -34,15 +34,15 @@
       h('span', { class: 'xp-lv' }, 'Lv ' + L.i), h('span', { class: 'xp-bar', 'aria-hidden': 'true' }, h('i', { style: { width: L.pct + '%' } })), sk ? h('span', { class: 'xp-sk' }, '🔥' + sk) : null);
     const find = h('button', { class: 'icobtn', title: 'Найти упражнение (клавиша /)', 'aria-label': 'Найти упражнение', onclick: () => Find(), html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>' });
     const bbtn = h('button', { class: 'icobtn', title: 'Режим доски: крупный шрифт, без игровых элементов', 'aria-label': 'Режим доски', 'aria-pressed': String(Board.on()), onclick: () => { Board.set(!Board.on()); bbtn.setAttribute('aria-pressed', String(Board.on())); toast(Board.on() ? 'Board mode: крупный шрифт, игровые элементы скрыты' : 'Board mode OFF'); }, html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8"/></svg>' });
-    hd.append(h('a', { class: 'brand', href: '#/' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, 'E'), h('span', null, h('b', null, BOOK.title), h('small', null, BOOK.subtitle))),
+    hd.append(h('a', { class: 'brand', href: '#/' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, 'O'), h('span', null, h('b', null, BOOK.title), h('small', null, BOOK.subtitle))),
       navEl, h('div', { class: 'hd-r' }, xpchip, find, bbtn, h('a', { class: 'who', href: '#/tutor', title: 'Сменить ученика' }, h('span', { class: 'av', 'aria-hidden': 'true' }, (p.name[0] || 'S').toUpperCase()), h('span', { class: 'who-n' }, p.name)), tbtn, menuBtn));
   }
 
-  /* ---------- Board mode (для урока с преподавателем / интерактивной доски) ---------- */
+  /* ---------- Board mode (для урока с учителем / интерактивной доски) ---------- */
   const Board = { on() { return !!Core.LS.get('board', false); }, set(v) { Core.LS.set('board', !!v); document.documentElement.classList.toggle('board', !!v); } };
 
   /* ---------- Find exercise: «12 3», «p.12 ex 3», «E4», «question tags» ---------- */
-  function exLabel(id, it) { return lname(id) + ' · ' + (it.source === 'added' ? (it.oge ? 'OGE · ' : '') + (it.title || 'Practice') : 'Ex. ' + it.num + ' · p.' + it.page); }
+  function exLabel(id, it) { return lname(id) + ' · ' + (it.source === 'added' ? (it.title || 'Practice') : 'Ex. ' + it.num + ' · p.' + it.page); }
   function search(q) {
     q = q.trim().toLowerCase(); if (!q) return [];
     const all = []; ALL().forEach(id => allItems(id).forEach(it => all.push([id, it])));
@@ -55,10 +55,10 @@
   function Find() {
     if (document.querySelector('.find-ov')) return;
     const list = h('ul', { class: 'find-list', role: 'listbox' });
-    const inp = h('input', { class: 'inp big', type: 'search', placeholder: 'Страница и номер: 12 3 · или слово: question tags', 'aria-label': 'Поиск упражнения', autocomplete: 'off' });
+    const inp = h('input', { class: 'inp big', type: 'search', placeholder: 'Страница и номер: 12 3 · или слово: used to', 'aria-label': 'Поиск упражнения', autocomplete: 'off' });
     const close = () => { ov.remove(); document.removeEventListener('keydown', key); };
     const key = e => { if (e.key === 'Escape') close(); };
-    const paint = () => { const r = search(inp.value); list.innerHTML = ''; if (!inp.value.trim()) { list.append(h('li', { class: 'muted small' }, 'Например: «13 4» — упражнение 4 на с. 13 · «E4» · «tags» · «present continuous». Страницы Entry Book и Student Book различаются кодом урока.')); return; }
+    const paint = () => { const r = search(inp.value); list.innerHTML = ''; if (!inp.value.trim()) { list.append(h('li', { class: 'muted small' }, 'Например: «13 4» — упражнение 4 на с. 13 · «used to» · «houseboat» · «present continuous».')); return; }
       if (!r.length) list.append(h('li', { class: 'muted' }, 'Ничего не найдено')); r.forEach(([id, it]) => list.append(h('li', null, h('a', { href: '#/lesson/' + id + '/' + it.id, onclick: close }, h('b', null, exLabel(id, it)), h('span', { class: 'muted small' }, LESSONS[id].title + (it.instruction ? ' — ' + it.instruction.replace(/\*/g, '').slice(0, 80) : '')))))); };
     inp.addEventListener('input', paint);
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') { const a = list.querySelector('a'); if (a) { a.click(); location.hash = a.getAttribute('href'); } } });
@@ -95,38 +95,48 @@
       h('a', { class: 'tcard2 fix with-pic', href: '#/revision' },
         h('small', null, 'Работа над ошибками'), h('b', null, errs.length ? errs.length + ' заданий до ★★★' : 'Ошибок нет'),
         h('span', null, errs.length ? 'Исправленное задание даёт бонус XP и значок Bug hunter' : 'Сюда попадут задания, где были ошибки'), h('span', { class: 'go', 'aria-hidden': 'true' }, '→'), tcPic(errs.length ? '🔧' : '🎯')));
+    const ready = BOOK.units.filter(u => u.ready); const soon = BOOK.units.filter(u => u.soon && !u.review);
     return h('div', { class: 'page home' },
       h('section', { class: 'hero' },
         h('div', { class: 'hero-txt' },
-          h('div', { class: 'eyebrow' }, 'One student · One tutor · ' + BOOK.level),
-          h('h1', null, 'Learn it. ', h('span', { class: 'hl-pink' }, 'Say it.'), ' ', h('span', { class: 'hl-blue' }, 'Keep it.')),
-          h('p', { class: 'lead' }, 'Все упражнения учебника — интерактивно, с проверкой. Словарный тренажёр с интервальным повторением, миссии уроков и подготовка к ОГЭ по теме урока.'),
-          h('div', { class: 'row' }, last ? h('a', { class: 'btn primary lg', href: last }, 'Continue lesson →') : h('a', { class: 'btn primary lg', href: '#/lesson/u0-1' }, 'Start: Entry E1 →'),
-            h('a', { class: 'btn ghost lg', href: '#/lesson/u1-opener' }, 'Unit 1'), h('a', { class: 'btn ghost lg', href: '#/vocab' }, 'Vocabulary Lab'))),
+          h('div', { class: 'eyebrow' }, BOOK.title + ' · Student’s Book · ' + BOOK.level),
+          h('h1', null, 'Read it. ', h('span', { class: 'hl-pink' }, 'Say it.'), ' ', h('span', { class: 'hl-blue' }, 'Keep it.')),
+          h('p', { class: 'lead' }, 'Интерактивная платформа по учебнику Optimise Stars B1: задания учебника с проверкой, аудио с регулировкой скорости, картинки, словарный тренажёр с интервальным повторением и прогресс по каждому уроку.'),
+          h('div', { class: 'row' }, last ? h('a', { class: 'btn primary lg', href: last }, 'Continue →') : h('a', { class: 'btn primary lg', href: '#/lesson/st-1' }, 'Start: Starter →'),
+            h('a', { class: 'btn ghost lg', href: '#/lesson/u1-1' }, 'Unit 1'), h('a', { class: 'btn ghost lg', href: '#/vocab' }, 'Vocabulary Lab'))),
         h('figure', { class: 'hero-art' }, h('div', { class: 'blob b1' }), h('div', { class: 'blob b2' }), h('img', { src: 'assets/keks.webp', alt: 'Кекс — кот-талисман платформы', width: 720, height: 630 }),
           h('figcaption', { class: 'keks-say' }, due ? 'Мяу! ' + due + ' слов ждут повторения.' : errs.length ? 'Мяу! Давай доведём ошибки до ★★★?' : 'Мяу! Начнём?'))),
       today,
       h('section', { class: 'route-strip' }, h('b', null, 'Как устроен урок'),
-        h('ol', null, [['Start', 'разминка и новые слова', '👋'], ['Practice', 'задания учебника с проверкой', '📘'], ['Train', 'слова: узнать → употребить → вспомнить', '🏋️'], ['Apply', 'ОГЭ по теме урока', '🎯'], ['Review', 'самооценка и работа над ошибками', '🏁']].map(([a, b, e]) => h('li', null, h('span', null, window.Pics ? Pics.img(e, { size: 32 }) : null, a), ' ', b)))),
+        h('ol', null, [['Learn', 'слова урока на карточках', '📚'], ['Practice', 'задания учебника в его порядке и нумерации', '📘'], ['Check', 'проверка, подсказка, ещё попытка', '✅'], ['Train', 'слова: узнать → употребить → вспомнить', '🏋️'], ['Review', 'самооценка и работа над ошибками', '🏁']].map(([a, b, e]) => h('li', null, h('span', null, window.Pics ? Pics.img(e, { size: 32 }) : null, a), ' ', b)))),
       h('section', { class: 'stats-strip' },
         stat(st.mastered, 'words mastered', 'blue', '🧠'), stat(st.learning + st.difficult, 'words in progress', 'pink', '📈'), stat(due, 'due for review', 'yellow', '⏰'),
         stat(Object.values(d.ex).filter(e => e.done).length, 'exercises done', 'orange', '✅')),
-      h('section', { class: 'units' },
-        h('div', { class: 'sec-h' }, h('h2', null, 'Modules'), h('span', { class: 'muted' }, 'В порядке учебника')),
-        BOOK.units.map(u => UnitCard(u))));
+      h('section', { class: 'units', id: 'course' },
+        h('div', { class: 'sec-h' }, h('h2', null, 'Course map'), h('span', { class: 'muted' }, 'Starter + 10 units · готово: ' + ready.map(ulab).join(', ') + ' · скоро: ' + soon.length + ' юнитов')),
+        CourseMap(),
+        ready.map(u => UnitCard(u))));
+  }
+  /* Карта всего курса: готовые разделы — ссылки, остальные — «Скоро» (без выдуманного содержания) */
+  function CourseMap() {
+    return h('ol', { class: 'cmap', 'aria-label': 'Структура курса' }, BOOK.units.map(u => {
+      const p = u.ready ? u.lessons.map(lessonProgress).reduce((a, x) => ({ d: a.d + x.done, t: a.t + x.total }), { d: 0, t: 0 }) : null;
+      const inner = [h('span', { class: 'cm-no' }, u.review ? 'R' : u.num), h('span', { class: 'cm-t' }, h('b', null, u.review ? u.title : (u.label || 'Unit ' + u.num) + (u.label ? '' : ' · ' + u.title)), h('small', null, (u.review ? '' : u.topic + ' · ') + 'pp. ' + u.pages)),
+        u.ready ? h('span', { class: 'cm-st ok' }, Math.round(p.d / Math.max(1, p.t) * 100) + '%') : h('span', { class: 'cm-st soon' }, 'Скоро')];
+      return h('li', { class: 'cm' + (u.ready ? ' ready' : ' soon') + (u.review ? ' rev' : '') }, u.ready ? h('a', { href: '#/lesson/' + u.lessons[0] }, inner) : h('div', { 'aria-label': (u.label || 'Unit ' + u.num) + ' — скоро' }, inner));
+    }));
   }
   const tcPic = e => window.Pics ? Pics.img(e, { cls: 'tc-pic', size: 96 }) : null;
   const stat = (n, l, c, e) => h('div', { class: 'stat ' + c }, h('b', null, n), h('span', null, l), e && window.Pics ? Pics.img(e, { cls: 'st-pic', size: 64 }) : null);
 
   function UnitCard(u) {
-    return h('article', { class: 'unit-card' },
+    return h('article', { class: 'unit-card', id: 'unit-' + u.id },
       h('div', { class: 'unit-no' }, u.num),
       h('div', { class: 'unit-body' },
         window.Pics ? Pics.unitCover(u) : null,
-        h('h3', null, u.title), h('div', { class: 'muted small' }, 'Pages ' + u.pages),
-        h('ul', { class: 'skills' }, u.skills.map(([k, v]) => h('li', null, h('b', null, k), ' ', v))),
-        h('div', { class: 'lessons' }, u.lessons.map(id => LessonTile(id))),
-        u.pending.length ? h('ul', { class: 'pending' }, u.pending.map(p => h('li', null, '⏳ ', p))) : null));
+        h('h3', null, (u.label ? '' : 'Unit ' + u.num + ' · ') + u.title), h('div', { class: 'muted small' }, u.topic + ' · Student’s Book pp. ' + u.pages),
+        h('ul', { class: 'skills' }, (u.skills || []).map(([k, v]) => h('li', null, h('b', null, k), ' ', v))),
+        h('div', { class: 'lessons' }, u.lessons.map(id => LessonTile(id)))));
   }
   function LessonTile(id) {
     const L = LESSONS[id]; const p = lessonProgress(id);
@@ -145,21 +155,17 @@
     const navItems = [];
     const body = h('div', { class: 'lesson-body' });
     secs.forEach(s => {
+      if (s.id === 'review' && words.length && !body.querySelector('#sec-train')) { body.appendChild(TrainSection(id)); navItems.push(['train', 'Vocabulary Training']); }
       const sec = h('section', { class: 'lsec', id: 'sec-' + s.id }, h('h2', { class: 'lsec-h' }, window.Pics ? Pics.sectionIcon(s.id) : null, s.title));
-      navItems.push([s.id, s.title]);
+      navItems.push([s.id, s.title.replace(/ · .*/, '')]);
       s.items.forEach(it => sec.appendChild(Exercises.render(it)));
       body.appendChild(sec);
-      if (s.id === 'warm' && words.length) {
-        const vs = VocabSection(id, words); body.appendChild(vs); navItems.push(['vocab', 'Vocabulary']);
-      }
-      if (s.id === 'book' && words.length) { body.appendChild(TrainSection(id)); navItems.push(['train', 'Vocabulary Training']); }
     });
     if (words.length && !body.querySelector('#sec-train')) { body.appendChild(TrainSection(id)); navItems.push(['train', 'Vocabulary Training']); }
     if (words.length && !body.querySelector('#sec-vocab')) { body.prepend(VocabSection(id, words)); navItems.unshift(['vocab', 'Vocabulary']); }
     // reorder nav to page order
     const order = [...body.children].map(c => c.id.replace('sec-', ''));
     navItems.sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
-    const coreBtn = h('button', { class: 'chipbtn', 'aria-pressed': 'false', onclick: () => { coreOnly = !coreOnly; coreBtn.setAttribute('aria-pressed', String(coreOnly)); body.classList.toggle('core-only', coreOnly); toast(coreOnly ? 'Core Route: показаны только основные задания. Extra скрыты, но не удалены.' : 'Показаны все задания'); } }, 'Core Route only');
     const pb = h('div', { class: 'lprog' }, h('i', { style: { width: p.pct + '%' } }));
     const onProg = () => { const q = lessonProgress(id); pb.firstChild.style.width = q.pct + '%'; pl.textContent = q.done + '/' + q.total + ' done' + (q.acc != null ? ' · ' + q.acc + '% correct' : ''); setTimeout(paintMs, 0); };
     const pl = h('span', { class: 'small' });
@@ -171,20 +177,21 @@
     document.addEventListener('progress-changed', onProg); currentCleanup = () => document.removeEventListener('progress-changed', onProg);
     const hpano = window.Pics ? Pics.lessonPano(id) : null;
     const page = h('div', { class: 'page lesson acc-' + L.accent },
-      h('a', { class: 'back', href: '#/' }, '← All lessons'),
+      h('a', { class: 'back', href: '#/' }, '← Course map'),
       h('header', { class: 'lhero' + (hpano ? ' has-pano' : '') },
         h('div', { class: 'lh-code' }, L.code),
-        h('div', null, h('div', { class: 'eyebrow' }, ulab(unitOf(id)) + ' · ' + L.kicker + ' · p.' + L.pages + (L.sdg ? ' · SDG ' + L.sdg : '')), h('h1', null, L.title), h('p', { class: 'lead' }, L.goal),
-          h('div', { class: 'lh-meta' }, h('span', { class: 'chip' }, '⏱ ' + L.time), L.split ? h('span', { class: 'chip tutor-only' }, L.split) : null)), hpano),
+        h('div', null, h('div', { class: 'eyebrow' }, ulab(unitOf(id)) + (unitOf(id).label ? '' : ' · ' + unitOf(id).title) + ' · ' + L.kicker + ' · p.' + L.pages), h('h1', null, L.title), h('p', { class: 'lead' }, L.goal),
+          h('div', { class: 'lh-meta' }, L.time ? h('span', { class: 'chip' }, '⏱ ' + L.time) : null, L.split ? h('span', { class: 'chip tutor-only' }, L.split) : null)), hpano),
       msBox,
-      h('div', { class: 'lnav' }, h('div', { class: 'lnav-in' }, navItems.map(([sid, t]) => h('a', { href: '#/lesson/' + id + '/@' + sid, 'data-stage': STAGE(sid) }, h('i', null, STAGE(sid)), t)), coreBtn), h('div', { class: 'lnav-p' }, pb, pl)),
+      h('div', { class: 'lnav' }, h('div', { class: 'lnav-in' }, navItems.map(([sid, t]) => h('a', { href: '#/lesson/' + id + '/@' + sid, 'data-stage': STAGE(sid) }, h('i', null, STAGE(sid)), t))), h('div', { class: 'lnav-p' }, pb, pl)),
       body,
+      L.wb ? h('p', { class: 'wbnote' }, h('b', null, 'В учебнике также: '), L.wb.join(' · '), h('span', { class: 'muted' }, ' — Workbook и цифровые материалы в присланные файлы не входили.')) : null,
       h('nav', { class: 'lfoot' }, prevNext(id)));
     onProg();
     if (exId) setTimeout(() => { const t = exId.startsWith('@') ? document.getElementById('sec-' + exId.slice(1)) : document.getElementById('ex-' + exId); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'start' }); t.classList.add('flash'); setTimeout(() => t.classList.remove('flash'), 1500); } }, 60);
     return page;
   }
-  const STAGE = sid => sid === 'warm' ? 'Start' : sid === 'vocab' ? 'Learn' : sid === 'train' ? 'Train' : sid === 'oge' ? 'Apply' : /review/.test(sid) ? 'Review' : 'Practice';
+  const STAGE = sid => sid === 'vocab' ? 'Learn' : sid === 'train' ? 'Train' : /review/.test(sid) ? 'Review' : /^ref/.test(sid) ? 'Reference' : 'Practice';
   function prevNext(id) { const ls = ALL(); const i = ls.indexOf(id); const lab = j => lname(ls[j]) + ' ' + LESSONS[ls[j]].title; return [i > 0 ? h('a', { class: 'btn ghost', href: '#/lesson/' + ls[i - 1] }, '← ' + lab(i - 1)) : h('span'), i < ls.length - 1 ? h('a', { class: 'btn primary', href: '#/lesson/' + ls[i + 1] }, lab(i + 1) + ' →') : h('a', { class: 'btn primary', href: '#/revision' }, 'Revision →')]; }
 
   function VocabSection(id, words) {
@@ -209,7 +216,7 @@
 
   /* ---------- Vocabulary Lab ---------- */
   const SETS = () => [['all', 'All words', unitWords(), 'tab']]
-    .concat(BOOK.units.map(u => [u.id, ulab(u), unitWordsOf(u.id), 'tab']))
+    .concat(BOOK.units.filter(u => u.ready).map(u => [u.id, ulab(u), unitWordsOf(u.id), 'tab']))
     .concat(ALL().filter(id => lessonWords(id).length).map(id => [id, lname(id) + ' ' + LESSONS[id].title, lessonWords(id), 'lesson']))
     .concat([['due', 'Due for review', SRS.due(unitWords()), 'tab'], ['hard', 'Difficult Words', SRS.difficult(unitWords()), 'tab']]);
   function VocabLab(setId, modeId) {
@@ -247,7 +254,7 @@
       h('div', { class: 'rev-grid' },
         h('div', { class: 'rcard' }, h('b', { class: 'rn' }, due.length), h('h3', null, 'Words due today'), h('p', { class: 'muted' }, 'Интервальное повторение: слово возвращается через 10 мин, 1, 3, 7 и 16 дней.'), h('div', { class: 'row' }, h('button', { class: 'btn primary', disabled: !due.length || null, onclick: () => Runner(host, shuffle(due), () => ['type', 'ctx', 'spell'][Math.floor(Math.random() * 3)], { onExit: () => route() }) }, 'Start review'), due.length ? h('a', { class: 'btn ghost', href: '#/vocab/due/guided' }, 'Learn with Keks') : null)),
         h('div', { class: 'rcard' }, h('b', { class: 'rn' }, hard.length), h('h3', null, 'Difficult Words'), h('p', { class: 'muted' }, 'Только слова, в которых были ошибки.'), h('button', { class: 'btn primary', disabled: !hard.length || null, onclick: () => Runner(host, shuffle(hard), () => ['type', 'ctx', 'build'][Math.floor(Math.random() * 3)], { onExit: () => route() }) }, 'Train mistakes')),
-        h('div', { class: 'rcard' }, h('b', { class: 'rn' }, words.length), h('h3', null, 'Unit vocabulary tests'), h('p', { class: 'muted' }, 'Итоговый тест модуля: 12 случайных слов, смешанные форматы. Результат сохраняется.'), h('div', { class: 'row' }, BOOK.units.map(u => h('button', { class: 'btn primary sm', onclick: () => Runner(host, shuffle(unitWordsOf(u.id)).slice(0, 12), () => ['type', 'ctx', 'def', 'spell', 'toEn'][Math.floor(Math.random() * 5)], { test: ulab(u) + ' vocabulary test', onExit: () => route() }) }, ulab(u)))))),
+        h('div', { class: 'rcard' }, h('b', { class: 'rn' }, words.length), h('h3', null, 'Unit vocabulary tests'), h('p', { class: 'muted' }, 'Итоговый тест модуля: 12 случайных слов, смешанные форматы. Результат сохраняется.'), h('div', { class: 'row' }, BOOK.units.filter(u => u.ready && unitWordsOf(u.id).length).map(u => h('button', { class: 'btn primary sm', onclick: () => Runner(host, shuffle(unitWordsOf(u.id)).slice(0, 12), () => ['type', 'ctx', 'def', 'spell', 'toEn'][Math.floor(Math.random() * 5)], { test: ulab(u) + ' vocabulary test', onExit: () => route() }) }, ulab(u)))))),
       host,
       h('div', { class: 'sec-h' }, h('h2', null, 'Exercises with mistakes'), h('span', { class: 'muted' }, 'Mistake hunt: доведи до ★★★ — +XP за исправление')),
       errs.length ? h('ul', { class: 'errlist fixq' }, errs.map(([id, it, e]) => h('li', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, exLabel(id, it)), h('span', { class: 'fq-r' }, h('span', { class: 'ex-stars' }, [1, 2, 3].map(i => h('i', { class: i <= Game.stars(it.id) ? 'on' : null }, '★'))), h('span', { class: 'pill difficult' }, 'best ' + Math.round(e.best * 100) + '%'))))) : h('p', { class: 'muted' }, 'Нет упражнений с ошибками. Выполни упражнения урока — сюда попадут те, где есть ошибки.'));
@@ -294,47 +301,50 @@
   }
   async function resetAll() { const p = Profiles.ensure(); if (await confirmBox('New Student / Reset All', 'Все результаты ученика «' + p.name + '» (упражнения, ответы, словарь, тесты) будут удалены без возможности восстановления. Сначала можно сделать Export JSON.', 'Удалить всё')) { Store.reset(); toast('Результаты очищены'); route(); } }
 
-  /* ---------- Tutor ---------- */
+  /* ---------- Teacher ---------- */
+  const KS = { tb: ['Teacher’s Book', 'mastered'], 'tb-sug': ['TB · suggested', 'mastered'], own: ['подготовлен', 'difficult'], free: ['свободный ответ', 'new'], none: ['нет ключа', 'new'] };
   function TutorPage() {
     if (!Core.TutorLock.unlocked()) {
-      return h('div', { class: 'page' }, h('div', { class: 'eyebrow' }, 'Tutor Mode'), h('h1', null, '🔒 Только для преподавателя'),
-        h('p', { class: 'lead' }, 'Здесь профили учеников, ключи и настройки. Чтобы войти, введите код преподавателя.'),
-        h('div', { class: 'row' }, h('button', { class: 'btn primary lg', onclick: async () => { if (await Core.TutorLock.request()) route(); } }, 'Ввести код'), h('a', { class: 'btn ghost lg', href: '#/' }, '← К урокам')));
+      return h('div', { class: 'page' }, h('div', { class: 'eyebrow' }, 'Teacher'), h('h1', null, '🔒 Режим учителя'),
+        h('p', { class: 'lead' }, 'Ключи, образцы ответов, методические заметки и профили учеников. Чтобы войти, введите код учителя.'),
+        h('div', { class: 'row' }, h('button', { class: 'btn primary lg', onclick: async () => { if (await Core.TutorLock.request()) route(); } }, 'Ввести код'), h('a', { class: 'btn ghost lg', href: '#/' }, '← К курсу')));
     }
     const list = Profiles.list(); const cur = Profiles.currentId(); const d = Store.data();
     const asks = []; UNIT.lessons.forEach(id => allItems(id).forEach(it => { const e = d.ex[it.id]; if (e && e.ask) asks.push([id, it, e.ask]); }));
     const audio = []; UNIT.lessons.forEach(id => allItems(id).forEach(it => { if (it.audio) audio.push([id, it]); }));
-    return h('div', { class: 'page' }, h('div', { class: 'eyebrow' }, 'Tutor Mode'), h('h1', null, 'Tutor ', h('span', { class: 'hl-blue' }, 'desk')),
-      h('div', { class: 'tcard' }, h('label', { class: 'switch' }, h('input', { type: 'checkbox', checked: Tutor.on() || null, onchange: e => { Tutor.set(e.target.checked); header(); } }), h('span', null, 'Режим преподавателя: заметки, ключи («Показать ключ»), чек-листы, комментарии')),
-        h('p', { class: 'muted small' }, 'Вход по коду. Режим выключается сам, когда закрывается вкладка. Уходя, нажмите «Выйти».'),
-        h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => { Core.TutorLock.lock(); toast('Tutor mode закрыт'); route(); } }, '🔒 Выйти из режима преподавателя')),
+    const seenTrack = new Set();
+    return h('div', { class: 'page' }, h('div', { class: 'eyebrow' }, 'Teacher'), h('h1', null, 'Teacher ', h('span', { class: 'hl-blue' }, 'desk')),
+      h('div', { class: 'tcard' }, h('label', { class: 'switch' }, h('input', { type: 'checkbox', checked: Tutor.on() || null, onchange: e => { Tutor.set(e.target.checked); header(); } }), h('span', null, 'Режим учителя: ключи («Ключ (учитель)»), образцы ответов, заметки, комментарии к заданиям')),
+        h('p', { class: 'muted small' }, 'Режим открывается кодом и сам выключается, когда закрывается вкладка. На общем компьютере нажмите «Выйти».'),
+        h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => { Core.TutorLock.lock(); toast('Режим учителя закрыт'); route(); } }, '🔒 Выйти из режима учителя')),
         h('label', { class: 'switch' }, h('input', { type: 'checkbox', checked: Board.on() || null, onchange: e => { Board.set(e.target.checked); header(); } }), h('span', null, 'Board mode: крупный шрифт для интерактивной доски, без XP, звёзд и Кекса')),
-        h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => Find() }, '⌕ Найти упражнение'), h('span', { class: 'muted small' }, 'или клавиша «/» на любой странице: «13 4» = с. 13, упр. 4'))),
+        h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => Find() }, '⌕ Найти упражнение'), h('span', { class: 'muted small' }, 'или клавиша «/»: «13 4» = с. 13, упр. 4'))),
+      h('aside', { class: 'skillbox' }, h('div', { class: 'sk-t' }, 'Как читать ключи'), h('div', { html: '<p><span class="pill mastered">Teacher’s Book</span> — ответ взят из Teacher’s Book (Starter и Unit 1). <span class="pill difficult">подготовлен</span> — ответ составлен для платформы по тексту, картинке или аудио; это не официальный ключ. <span class="pill new">свободный ответ</span> — в Teacher’s Book «Students’ own answers»: система такие ответы не проверяет, ученик отмечает выполнение.</p><p class="small">Сайт статический (GitHub Pages): ключи для автопроверки лежат в файлах сайта, и их технически можно найти в коде страницы. Код учителя скрывает ключи в интерфейсе, но не является защитой данных.</p>' })),
       h('div', { class: 'sec-h' }, h('h2', null, 'Students on this device')),
       h('ul', { class: 'students' }, list.map(s => h('li', { class: s.id === cur ? 'on' : null }, h('span', { class: 'av' }, s.name[0].toUpperCase()), h('b', null, s.name), s.id === cur ? h('span', { class: 'pill mastered' }, 'active') : h('button', { class: 'btn ghost sm', onclick: () => { Profiles.switchTo(s.id); Store._id = null; toast('Ученик: ' + s.name); route(); } }, 'Switch'),
         h('button', { class: 'btn ghost sm', onclick: async () => { const n = await promptBox('Имя ученика', s.name); if (n) { Profiles.rename(s.id, n); route(); } } }, 'Rename'),
         list.length > 1 ? h('button', { class: 'btn ghost sm', onclick: async () => { if (await confirmBox('Удалить профиль?', 'Профиль «' + s.name + '» и все его результаты будут удалены.', 'Удалить')) { Profiles.remove(s.id); Store._id = null; route(); } } }, 'Delete') : null))),
       h('button', { class: 'btn primary', onclick: async () => { const n = await promptBox('Новый ученик'); if (n) { Profiles.add(n); Store._id = null; toast('Создан профиль: ' + n); route(); } } }, '+ Add student'),
-      h('div', { class: 'sec-h' }, h('h2', null, 'Quick jump')),
-      h('div', { class: 'jump' }, UNIT.lessons.map(id => h('div', { class: 'jcol' }, h('h3', null, lname(id) + ' ' + LESSONS[id].title), h('div', { class: 'jlinks' }, allItems(id).map(it => h('a', { href: '#/lesson/' + id + '/' + it.id, class: 'jl' + (it.source === 'added' ? ' add' : '') }, it.source === 'added' ? (it.oge ? 'OGE' : it.type === 'review' ? 'Review' : 'Warm') : it.num))), lessonWords(id).length ? h('a', { class: 'small', href: '#/vocab/' + id }, 'Vocabulary of ' + lname(id) + ' →') : null))),
+      h('div', { class: 'sec-h' }, h('h2', null, 'Quick jump'), h('span', { class: 'muted small' }, 'оранжевая рамка — ключ подготовлен для платформы')),
+      h('div', { class: 'jump' }, UNIT.lessons.map(id => h('div', { class: 'jcol' }, h('h3', null, lname(id) + ' ' + LESSONS[id].title), h('div', { class: 'jlinks' }, allItems(id).map(it => h('a', { href: '#/lesson/' + id + '/' + it.id, class: 'jl' + (it.source === 'added' ? ' add' : '') + (it.keySrc === 'own' ? ' own' : ''), title: it.keySrc ? KS[it.keySrc][0] : null }, it.source === 'added' ? (it.type === 'review' ? 'Review' : '+') : it.num))), lessonWords(id).length ? h('a', { class: 'small', href: '#/vocab/' + id }, 'Vocabulary of ' + lname(id) + ' →') : null))),
       h('div', { class: 'sec-h' }, h('h2', null, 'Questions from the student')),
-      asks.length ? h('ul', { class: 'errlist' }, asks.map(([id, it, q]) => h('li', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, lname(id) + ' · ' + (it.num ? 'Ex. ' + it.num : it.title)), h('span', null, q)))) : h('p', { class: 'muted' }, 'Вопросов пока нет (кнопка «Ask your tutor» под каждым заданием).'),
-      h('div', { class: 'sec-h' }, h('h2', null, 'Audio status')),
-      h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable' }, h('thead', null, h('tr', null, ['Track', 'Exercise', 'File', 'Status'].map(t => h('th', null, t)))), h('tbody', null, audio.map(([id, it]) => h('tr', null, h('td', null, it.audio.track), h('td', null, lname(id) + ' Ex. ' + it.num + ' p.' + it.page), h('td', null, h('code', null, it.audio.file || 'audio/' + it.audio.track + '.mp3')), h('td', null, it.audio.file ? h('span', { class: 'pill mastered' }, 'connected') : h('span', { class: 'pill new' }, 'waiting'))))))),
-      h('p', { class: 'muted small' }, 'Как подключить: положите файл в папку audio/ и впишите путь в js/data-unit1.js → audio.file (например \'audio/03.mp3\'). Подробно — в README.md.'),
+      asks.length ? h('ul', { class: 'errlist' }, asks.map(([id, it, q]) => h('li', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, lname(id) + ' · ' + (it.num ? 'Ex. ' + it.num : it.title)), h('span', null, q)))) : h('p', { class: 'muted' }, 'Вопросов пока нет (кнопка «Ask your teacher» под каждым заданием).'),
+      h('div', { class: 'sec-h' }, h('h2', null, 'Audio')),
+      h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable' }, h('thead', null, h('tr', null, ['Track', 'Exercise', 'File', 'Status'].map(t => h('th', null, t)))), h('tbody', null, audio.filter(([, it]) => { const k = it.audio.track + it.id; if (seenTrack.has(k)) return false; seenTrack.add(k); return true; }).map(([id, it]) => h('tr', null, h('td', null, it.audio.track), h('td', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, lname(id) + ' Ex. ' + it.num + ' p.' + it.page)), h('td', null, h('code', null, it.audio.file || '—')), h('td', null, it.audio.file ? h('span', { class: 'pill mastered' }, 'connected') : h('span', { class: 'pill difficult' }, 'нет файла'))))))),
+      h('p', { class: 'muted small' }, 'Как подключить недостающее аудио: положите файл в папку audio/starter/ (например S.01.mp3) и впишите путь в js/data-starter.js → audio.file. Подробно — в README.md.'),
       h('div', { class: 'sec-h' }, h('h2', null, 'Coverage')), h('a', { class: 'btn ghost', href: '#/coverage' }, 'Таблица соответствия учебнику →'));
   }
 
   function Coverage() {
     const rows = []; UNIT.lessons.forEach(id => allItems(id).forEach(it => { if (it.source === 'added') return; rows.push([id, it]); }));
-    const how = it => { const t = it.type === 'listen' ? it.inner.type : it.type; return t === 'open' ? 'Преподаватель ✓/✗ по ключу' : ['discuss', 'rank', 'checklist'].includes(t) ? 'Устно / отметка' : t === 'writing' ? (it.min ? 'Формальные признаки + преподаватель' : 'Преподаватель') : t === 'scores' ? 'Самооценка' : t === 'reference' ? 'Отметка «прочитано»' : 'Автопроверка'; };
-    const typeName = { gaps: 'Gaps / select', listen: 'Audio/video + task', mcq: 'Choice', inline: 'Choose the alternative', underline: 'Tap to underline + tense', rulebox: 'Grammar box', match: 'Matching', order: 'Write the sentence', rank: 'Ranking 1–3', discuss: 'Speaking prompts', open: 'Open answers + key', tapfind: 'Tap to underline', multi: 'Tick all', checklist: 'Checklist', scores: 'Scores 0–10', reference: 'Read / listen box', writing: 'Writing', interview: 'Timed speaking' };
+    const how = it => { const t = it.type === 'listen' ? it.inner.type : it.type; if (it.free || (it.inner && it.inner.free)) return 'Свободный ответ: отметка «готово»'; return t === 'open' ? 'Учитель ✓/✗' : ['discuss', 'checklist', 'plan', 'draw'].includes(t) ? 'Устно / отметка' : t === 'interview' ? 'Таймер + чек-лист учителя' : t === 'writing' ? 'Учитель (сайт считает слова)' : t === 'reference' ? 'Отметка «прочитано»' : 'Автопроверка'; };
+    const typeName = { gaps: 'Пропуски / выбор', listen: 'Аудио + задание', mcq: 'Выбор ответа', inline: 'Выбор в тексте', match: 'Сопоставление', order: 'Составить предложение', discuss: 'Говорение', open: 'Открытые ответы', tapfind: 'Найти в тексте', multi: 'Отметить все верные', checklist: 'Чек-лист', reference: 'Справка', writing: 'Письмо', interview: 'Говорение с таймером', sort: 'Распределить по группам', grid: 'Таблица соответствий', tickfix: 'Верно / исправь', draw: 'Рисунок', plan: 'План' };
     return h('div', { class: 'page' }, h('div', { class: 'eyebrow' }, 'Coverage'), h('h1', null, 'Учебник → сайт'),
-      h('p', { class: 'muted' }, 'Все задания модулей ' + BOOK.units.map(u => u.label || u.num).join(', ') + ' (Entry Book, Student Book, Grammar Reference & Practice, Workbook) в исходной нумерации: ' + rows.length + ' заданий. Добавленные материалы (warm-up, OGE, review) в таблицу не входят и на сайте помечены «Добавлено».'),
-      h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable' }, h('thead', null, h('tr', null, ['Page', 'Ex.', 'Site section', 'Format', 'Status', 'Check'].map(t => h('th', null, t)))),
-        h('tbody', null, rows.map(([id, it]) => h('tr', null, h('td', null, it.page), h('td', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, it.num)), h('td', null, lname(id) + ' ' + LESSONS[id].title), h('td', null, typeName[it.type] || it.type), h('td', null, it.audio && !it.audio.file ? h('span', { class: 'pill difficult' }, 'ждёт аудио ' + it.audio.track) : h('span', { class: 'pill mastered' }, 'готово')), h('td', null, how(it))))))),
-      h('div', { class: 'sec-h' }, h('h2', null, 'Не извлечено / не предоставлено')),
-      h('ul', { class: 'pending' }, ['Аудио и видео (Student Book и Workbook) — плееры готовы, транскрипты из Teacher’s Guide уже подключены', 'Видео Grammar Animation, Culture video — не предоставлены', 'Фото учебника не переносятся: вместо них — оригинальные иллюстрации платформы (3D-объекты, рисунки, схемы) и описания', 'Следующие модули — по мере работы'].map(t => h('li', null, '⏳ ' + t))));
+      h('p', { class: 'muted' }, 'Все задания разделов ' + BOOK.units.filter(u => u.ready).map(ulab).join(' и ') + ' (Student’s Book и связанные страницы Grammar / Vocabulary / Writing / Speaking reference) в исходной нумерации: ' + rows.length + ' заданий. Добавленные материалы (повторение слов, самооценка) помечены «Добавлено».'),
+      h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable' }, h('thead', null, h('tr', null, ['Page', 'Ex.', 'Lesson', 'Format', 'Check', 'Key', 'Media'].map(t => h('th', null, t)))),
+        h('tbody', null, rows.map(([id, it]) => h('tr', null, h('td', null, it.page), h('td', null, h('a', { href: '#/lesson/' + id + '/' + it.id }, it.num)), h('td', null, lname(id) + ' ' + LESSONS[id].title), h('td', null, typeName[it.type] || it.type), h('td', null, how(it)), h('td', null, it.keySrc ? h('span', { class: 'pill ' + KS[it.keySrc][1] }, KS[it.keySrc][0]) : '—'), h('td', null, it.audio ? (it.audio.file ? '🔊 ' + it.audio.track : h('span', { class: 'pill difficult' }, 'нет аудио ' + it.audio.track)) : it.video ? h('span', { class: 'pill difficult' }, 'нет видео') : '')))))),
+      h('div', { class: 'sec-h' }, h('h2', null, 'Не предоставлено')),
+      h('ul', { class: 'pending' }, ['Аудио Starter S.01–S.05 — в присланных файлах были дорожки Unit 1 (1.01–1.06) и Unit 2 (2.01–2.07). Задания Starter работают без аудио, плеер покажет пометку.', 'Видео: Unit 1 Reading (Hannah’s van), Grammar video (used to / would), Speaking video — задания перенесены, ключи Teacher’s Book у учителя.', 'Workbook, Digital practice, Digital game — не входили в материалы.', 'Unit 2–Unit 10 и Review-разделы — появятся позже.'].map(t => h('li', null, '⏳ ' + t))));
   }
   function NotFound() { return h('div', { class: 'page' }, h('h1', null, 'Page not found'), h('a', { class: 'btn primary', href: '#/' }, 'Home')); }
 

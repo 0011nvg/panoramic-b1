@@ -3,36 +3,67 @@
   'use strict';
   const { h, md, norm, matches, closeTo, Store, toast, shuffle } = Core;
 
-  const TAGCLR = { THINK: 'ink', WATCH: 'pink', LISTEN: 'pink', READ: 'blue', SPEAK: 'blue', VOCABULARY: 'pink', GRAMMAR: 'blue', CITIZENSHIP: 'navy', VIEWPOINTS: 'navy', SKILL: 'yellow', P: 'yellow' };
+  const TAGCLR = { VIDEO: 'pink', LISTEN: 'pink', READ: 'blue', SPEAK: 'blue', WRITE: 'navy', VOCABULARY: 'pink', GRAMMAR: 'blue', EXAM: 'yellow', ME: 'pink', THINK: 'ink', RESEARCH: 'navy', CULTURE: 'navy', LEARN: 'navy', 'LEARNING TO LEARN': 'navy', COMMUNITY: 'navy' };
 
   /* ---------- Audio player (real <audio>, or honest placeholder) ---------- */
   function AudioPlayer(audio) {
     if (!audio || !audio.file) {
       return h('div', { class: 'audio-ph', role: 'note' },
-        h('span', { class: 'audio-ph-ic', 'aria-hidden': 'true' }, audio && audio.video ? '▶' : '♪'),
-        h('div', null, h('strong', null, 'Audio will be added soon.'),
-          h('span', { class: 'muted' }, ' Track ' + (audio ? audio.track : '—') + (audio && audio.video ? ' · video “Story behind the photo”' : '') + ' — подключится, когда преподаватель добавит файл.')));
+        h('span', { class: 'audio-ph-ic', 'aria-hidden': 'true' }, '♪'),
+        h('div', null, h('strong', null, 'Аудио ' + (audio ? audio.track : '') + ' пока нет на сайте.'),
+          h('span', { class: 'muted' }, ' Файл этой дорожки не входил в присланные материалы. Задание можно выполнить по тексту учебника; плеер появится, когда файл добавят в папку audio/.')));
     }
     const el = h('audio', { preload: 'metadata', src: audio.file });
     const play = h('button', { class: 'ap-btn', 'aria-label': 'Play' }, '▶');
-    const replay = h('button', { class: 'ap-btn sm', 'aria-label': 'Replay from start', title: 'Replay' }, '↺');
+    const back = h('button', { class: 'ap-btn sm', 'aria-label': 'Назад на 5 секунд', title: '−5 s' }, '−5');
+    const fwd = h('button', { class: 'ap-btn sm', 'aria-label': 'Вперёд на 5 секунд', title: '+5 s' }, '+5');
     const bar = h('input', { type: 'range', min: 0, max: 1000, value: 0, class: 'ap-bar', 'aria-label': 'Playback position' });
     const time = h('span', { class: 'ap-time' }, '0:00');
-    const vol = h('input', { type: 'range', min: 0, max: 100, value: 100, class: 'ap-vol', 'aria-label': 'Volume' });
+    const rate = h('select', { class: 'ap-rate', 'aria-label': 'Скорость воспроизведения', title: 'Скорость' }, ['0.75', '0.9', '1', '1.25'].map(r => h('option', { value: r, selected: r === '1' || null }, r + '×')));
     const fmt = s => isFinite(s) ? Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') : '0:00';
-    play.onclick = () => { if (el.paused) el.play(); else el.pause(); };
-    replay.onclick = () => { el.currentTime = 0; el.play(); };
+    play.onclick = () => { if (el.paused) { document.querySelectorAll('audio').forEach(a => { if (a !== el) a.pause(); }); el.play().catch(() => {}); } else el.pause(); };
+    back.onclick = () => { el.currentTime = Math.max(0, el.currentTime - 5); };
+    fwd.onclick = () => { if (el.duration) el.currentTime = Math.min(el.duration, el.currentTime + 5); };
+    rate.onchange = () => { el.playbackRate = +rate.value; };
     el.onplay = () => { play.textContent = '❚❚'; play.setAttribute('aria-label', 'Pause'); };
     el.onpause = () => { play.textContent = '▶'; play.setAttribute('aria-label', 'Play'); };
-    el.ontimeupdate = () => { if (el.duration) bar.value = Math.round(el.currentTime / el.duration * 1000); time.textContent = fmt(el.currentTime) + ' / ' + fmt(el.duration); };
+    const paintT = () => { if (el.duration) bar.value = Math.round(el.currentTime / el.duration * 1000); time.textContent = fmt(el.currentTime) + ' / ' + fmt(el.duration); };
+    el.ontimeupdate = paintT; el.onloadedmetadata = paintT;
     el.onerror = () => { wrap.replaceWith(h('div', { class: 'audio-ph bad' }, 'Файл ' + audio.file + ' не найден. Проверьте папку audio/.')); };
     bar.oninput = () => { if (el.duration) el.currentTime = bar.value / 1000 * el.duration; };
-    vol.oninput = () => { el.volume = vol.value / 100; };
-    const wrap = h('div', { class: 'audio' }, el, play, replay, h('div', { class: 'ap-mid' }, bar, time), h('label', { class: 'ap-vlab' }, h('span', { 'aria-hidden': 'true' }, '🔊'), vol), h('span', { class: 'ap-track' }, 'Track ' + audio.track));
+    const wrap = h('div', { class: 'audio' }, el, play, back, fwd, h('div', { class: 'ap-mid' }, bar, time), rate, h('span', { class: 'ap-track' }, '🔊 ' + audio.track + (audio.label ? ' · ' + audio.label : '')));
     return wrap;
   }
 
+  /* ---------- Video from the book (not supplied) ---------- */
+  function VideoNote(v) {
+    return h('div', { class: 'audio-ph video', role: 'note' }, h('span', { class: 'audio-ph-ic', 'aria-hidden': 'true' }, '▶'),
+      h('div', null, h('strong', null, 'Видео «' + v.title + '»'), h('span', { class: 'muted' }, ' — не входило в присланные материалы. Учитель может показать его из Digital Student’s Book / Classroom Presentation Kit; ответы можно записать здесь.')));
+  }
+
+  /* ---------- Pictures from the book: zoom on tap ---------- */
+  function Lightbox(src, alt) {
+    const close = () => { ov.remove(); document.removeEventListener('keydown', k); };
+    const k = e => { if (e.key === 'Escape') close(); };
+    const ov = h('div', { class: 'lightbox', role: 'dialog', 'aria-modal': 'true', 'aria-label': alt || 'Picture', onclick: close },
+      h('img', { src, alt: alt || '' }), h('button', { class: 'lb-x', 'aria-label': 'Закрыть' }, '✕'));
+    document.body.appendChild(ov); document.addEventListener('keydown', k); ov.querySelector('.lb-x').focus();
+  }
+  function Figures(figs) {
+    if (!figs || !figs.length) return null;
+    return h('div', { class: 'figs n' + figs.length + (figs.length > 1 && figs.every(f => f.small) ? ' smalls' : '') }, figs.map(f => {
+      const im = h('img', { src: f.src, alt: f.alt || '', loading: 'lazy', decoding: 'async', width: f.w || 1200, height: f.h || 800 });
+      im.onerror = () => console.error('[Figure] Не загрузилась картинка: ' + f.src);
+      const marks = (f.marks || []).map(([x, y, t]) => h('span', { class: 'fmark', style: { left: x + '%', top: y + '%' }, 'aria-hidden': 'true' }, t));
+      const btn = h('button', { class: 'fzoom', 'aria-label': 'Увеличить картинку' + (f.alt ? ': ' + f.alt : ''), onclick: () => Lightbox(f.src, f.alt) }, im, marks, h('span', { class: 'fz-ic', 'aria-hidden': 'true' }, '⤢'));
+      return h('figure', { class: 'bfig' + (f.wide ? ' wide' : '') + (f.marks ? ' marked' : '') }, btn, f.cap ? h('figcaption', { html: md(f.cap) }) : null);
+    }));
+  }
+  /* где взят ключ: Teacher’s Book или подготовлен для платформы */
+  const KEYSRC = { tb: ['Ключ: Teacher’s Book', 'ks-tb'], 'tb-sug': ['Ключ: Teacher’s Book (suggested answers)', 'ks-tb'], own: ['Ключ подготовлен для платформы — не из Teacher’s Book', 'ks-own'], free: ['Свободные ответы (Teacher’s Book: Students’ own answers)', 'ks-free'], none: ['Ключа нет: ответы зависят от видео/аудио, которых нет в материалах', 'ks-own'] };
+
   /* ---------- Generic card wrapper ---------- */
+  function Box(b) { return h('aside', { class: 'skillbox ' + (b.kind || '') }, h('div', { class: 'sk-t' }, b.title), h('div', { html: b.html })); }
   function Stars(n) { return [1, 2, 3].map(i => h('i', { class: i <= n ? 'on' : null, 'aria-hidden': 'true' }, '★')); }
   function Card(it, body, api) {
     const isBook = it.source !== 'added';
@@ -42,20 +73,22 @@
     paintStars();
     const head = h('header', { class: 'ex-head' },
       h('div', { class: 'ex-badges' },
-        isBook ? h('span', { class: 'ex-num', title: 'Номер в учебнике' }, it.num) : h('span', { class: 'ex-num added', title: 'Добавлено, не из учебника' }, it.oge ? 'OGE' : '+'),
-        isBook ? h('span', { class: 'chip pg' }, 'p.' + it.page) : h('span', { class: 'chip added' }, it.oge === 'practice' ? 'OGE Exam Practice' : it.oge === 'builder' ? 'Exam Skills Builder' : 'Добавлено'),
+        isBook ? h('span', { class: 'ex-num', title: 'Номер в учебнике' }, it.num) : h('span', { class: 'ex-num added', title: 'Добавлено, не из учебника' }, '+'),
+        isBook ? h('span', { class: 'chip pg', title: 'Страница учебника' }, 'p.' + it.page) : h('span', { class: 'chip added' }, 'Добавлено'),
         (it.tags || []).map(t => h('span', { class: 'chip tag ' + (TAGCLR[t] || 'ink') }, t)),
-        h('span', { class: 'chip ' + (it.core === false ? 'extra' : 'core') }, it.core === false ? 'Extra' : 'Core'),
-        it.type === 'discuss' || it.type === 'rank' || it.type === 'interview' ? h('span', { class: 'chip turn' }, 'Student turn') : null,
+        it.audio ? h('span', { class: 'chip tag pink' }, '🔊 ' + it.audio.track) : null,
+        it.type === 'discuss' || it.type === 'interview' ? h('span', { class: 'chip turn' }, '🗣 Устно') : it.type === 'writing' ? h('span', { class: 'chip turn' }, '✍ Письмо') : null,
         starsEl),
       it.title ? h('h3', { class: 'ex-title' }, it.title) : null,
       h('p', { class: 'ex-instr', html: md(it.instruction || '') }),
-      it.adapted ? h('p', { class: 'ex-adapt' }, h('b', null, 'Адаптация для 1:1. '), it.adapted) : null,
-      it.ogeNote ? h('p', { class: 'ex-adapt oge' }, it.ogeNote) : null,
-      window.Pics ? Pics.forItem(it) : null,
-      it.photo ? h('p', { class: 'ex-photo' }, '📷 ', it.photo) : null,
-      (it.boxes || []).map(b => h('aside', { class: 'skillbox ' + (b.kind || '') }, h('div', { class: 'sk-t' }, b.title), h('div', { html: b.html }))),
-      it.tutorNote ? h('details', { class: 'tutor-only tnote' }, h('summary', null, 'Tutor note'), h('p', null, it.tutorNote)) : null);
+      it.adapted ? h('p', { class: 'ex-adapt' }, h('b', null, 'Как выполнять на сайте. '), it.adapted) : null,
+      it.video ? VideoNote(it.video) : null,
+      (it.boxes || []).filter(b => !b.after).map(Box),
+      Figures(it.figs),
+      it.article ? h('div', { class: 'frame article' }, it.article.title ? h('h4', { class: 'frame-h art-h' }, it.article.title) : null, h('div', { class: 'art-body', html: it.article.html })) : null,
+      it.articleRef ? h('details', { class: 'artref' }, h('summary', null, '📄 Текст: ' + it.articleRef.title), h('div', { class: 'frame article' }, h('div', { class: 'art-body', html: it.articleRef.html }))) : null,
+      it.keySrc ? h('p', { class: 'tutor-only keysrc ' + KEYSRC[it.keySrc][1] }, KEYSRC[it.keySrc][0] + (it.keyNote ? ' · ' + it.keyNote : '')) : null,
+      it.tutorNote ? h('details', { class: 'tutor-only tnote' }, h('summary', null, 'Методическая заметка'), h('div', { html: md(it.tutorNote) })) : null);
 
     const fb = h('div', { class: 'ex-fb', role: 'status', 'aria-live': 'polite' });
     const tools = h('div', { class: 'ex-tools' });
@@ -63,12 +96,21 @@
     const explBox = h('div', { class: 'ex-expl', hidden: true });
     const add = (label, cls, fn, title) => { const b = h('button', { class: 'btn ' + cls, onclick: fn, title: title || null }, label); tools.appendChild(b); return b; };
 
+    let peeked = false;
     if (api.check) add('Check Answers', 'primary', () => { const r = api.check(); show(r); });
     if (api.retry) add('Try Again', 'ghost', () => { api.retry(); fb.textContent = ''; fb.className = 'ex-fb'; });
     if (it.hint) add('Need a Hint?', 'ghost', () => { hintBox.hidden = !hintBox.hidden; hintBox.textContent = '💡 ' + it.hint; });
-    if (it.explanation) add('Show Explanation', 'ghost', () => { explBox.hidden = !explBox.hidden; explBox.textContent = it.explanation; });
-    if (api.reset) add('Reset Exercise', 'ghost subtle', async () => { if (await Core.confirmBox('Сбросить упражнение?', 'Ответы этого упражнения будут очищены. Результаты прошлых попыток останутся в истории.', 'Сбросить')) { api.reset(); fb.textContent = ''; fb.className = 'ex-fb'; Store.saveState(it.id, null); } });
-    if (api.key) add('Показать ключ', 'ghost tutor-only', () => api.key(), 'Только в режиме преподавателя');
+    /* Пояснение часто содержит ключ, поэтому у заданий с проверкой оно открывается только после первой попытки */
+    const explBtn = it.explanation ? add('Show Explanation', 'ghost', () => { explBox.hidden = !explBox.hidden; explBox.innerHTML = '💬 ' + md(it.explanation); }, api.check ? 'Доступно после первой проверки' : null) : null;
+    if (explBtn && api.check && !Store.ex(it.id).attempts.length) explBtn.hidden = true;
+    /* Ученик может открыть ответ только после своей попытки (если задание это допускает) */
+    const reveal = api.key && api.check && !it.noReveal ? add('Show answers', 'ghost reveal', async () => {
+      if (!(await Core.confirmBox('Показать правильные ответы?', 'Ответы появятся в задании. Звёзды за проверку после этого не начисляются — попробуй сначала исправить ошибки сам (Try Again, Hint).', 'Показать'))) return;
+      peeked = true; Store.ex(it.id).peeked = true; Store.save(); api.key(); fb.className = 'ex-fb show mid'; fb.textContent = 'Правильные ответы показаны. Прочитай их, затем нажми Reset и выполни задание ещё раз.';
+    }, 'Доступно после первой проверки') : null;
+    if (reveal) reveal.hidden = !Store.ex(it.id).attempts.length;
+    if (api.reset) add('Reset Exercise', 'ghost subtle', async () => { if (await Core.confirmBox('Сбросить упражнение?', 'Ответы этого упражнения будут очищены. Результаты прошлых попыток останутся в истории.', 'Сбросить')) { api.reset(); peeked = false; fb.textContent = ''; fb.className = 'ex-fb'; Store.saveState(it.id, null); } });
+    if (api.key) add('Ключ (учитель)', 'ghost tutor-only', () => api.key(), 'Только в режиме учителя');
     if (api.done) add(api.doneLabel || 'Mark as done', 'ghost', () => { const was = !!Store.ex(it.id).done; api.done(); paintDone(); const now = !!Store.ex(it.id).done; const xp = now && G ? G.exerciseDone(it, !was) : 0; toast(now ? 'Отмечено как выполненное' + (xp ? ' · +' + xp + ' XP' : '') : 'Отмечено как выполненное'); });
 
     function show(r) {
@@ -77,10 +119,12 @@
       const msg = pct === 100 ? 'Excellent! Everything is correct.' : pct >= 70 ? 'Good job! Correct the red answers and press Check again.' : 'Keep going! Use “Need a Hint?” and try again.';
       fb.className = 'ex-fb show ' + (pct === 100 ? 'ok' : pct >= 70 ? 'mid' : 'low');
       fb.innerHTML = '';
+      if (reveal && pct < 100) reveal.hidden = false;
+      if (explBtn) explBtn.hidden = false;
       const prevBest = Store.ex(it.id).best;
-      Store.record(it.id, r.score, r.max);
-      const g = G ? G.exerciseChecked(it, r, prevBest) : null;
-      const praise = g && g.fixed ? 'Fixed! Mistakes turned into 100%.' : msg;
+      Store.record(it.id, r.score, r.max, peeked ? { peek: true } : null);
+      const g = G && !peeked ? G.exerciseChecked(it, r, prevBest) : null;
+      const praise = peeked ? 'Ответы были открыты — результат сохранён без звёзд.' : g && g.fixed ? 'Fixed! Mistakes turned into 100%.' : msg;
       fb.append(...[h('span', { class: 'score' }, r.score + ' / ' + r.max), h('span', { class: 'pct' }, pct + '%'), h('span', null, praise), r.note ? h('span', { class: 'muted' }, ' ' + r.note) : null,
         g && (g.xp || starable) ? h('span', { class: 'reward' }, starable ? h('span', { class: 'rw-stars' }, Stars(g.stars)) : null, g.xp ? h('b', { class: 'rw-xp' }, '+' + g.xp + ' XP') : null) : null].filter(Boolean));   // append(null) печатал бы «null»
       if (pct < 100 && it.hint && hintBox.hidden) fb.append(h('button', { class: 'linkbtn', onclick: () => { hintBox.hidden = false; hintBox.textContent = '💡 ' + it.hint; } }, '💡 Hint'));
@@ -90,20 +134,22 @@
       document.dispatchEvent(new CustomEvent('progress-changed'));
     }
 
-    const tcomment = h('textarea', { class: 'inp tcomment', rows: 2, placeholder: 'Комментарий преподавателя…', 'aria-label': 'Комментарий преподавателя' });
+    const tcomment = h('textarea', { class: 'inp tcomment', rows: 2, placeholder: 'Комментарий учителя…', 'aria-label': 'Комментарий учителя' });
     const ex = Store.ex(it.id); tcomment.value = ex.tcomment || '';
     tcomment.addEventListener('change', () => { Store.ex(it.id).tcomment = tcomment.value; Store.save(); });
 
-    const ask = h('details', { class: 'askbox' }, h('summary', null, '✋ Ask your tutor'),
-      h('textarea', { class: 'inp', rows: 2, placeholder: 'Напиши вопрос преподавателю — он появится в Tutor Mode', 'aria-label': 'Вопрос преподавателю', onchange: e => { Store.ex(it.id).ask = e.target.value; Store.save(); } }));
+    const ask = h('details', { class: 'askbox' }, h('summary', null, '✋ Ask your teacher'),
+      h('textarea', { class: 'inp', rows: 2, placeholder: 'Напиши вопрос учителю — он появится в разделе Teacher', 'aria-label': 'Вопрос учителю', onchange: e => { Store.ex(it.id).ask = e.target.value; Store.save(); } }));
     ask.querySelector('textarea').value = ex.ask || '';
 
-    const follow = it.followUp ? h('div', { class: 'followup' }, h('div', { class: 'fu-title' }, 'Tutor follow-up'), h('ul', null, it.followUp.map(q => h('li', null, q)))) : null;
+    const follow = it.followUp ? h('div', { class: 'followup tutor-only' }, h('div', { class: 'fu-title' }, 'Вопросы учителя (follow-up)'), h('ul', null, it.followUp.map(q => h('li', null, q)))) : null;
     const extra = it.extra ? ExtraChallenge(it) : null;
 
     const links = it.links ? h('div', { class: 'plinks' }, h('span', null, 'PRACTICE'), it.links.map(([label, lesson, ex]) => h('a', { href: '#/lesson/' + lesson + (ex ? '/' + ex : '') }, label + ' ›'))) : null;
     const tx = it.type !== 'listen' && it.audio && it.audio.transcript ? Transcript(it.audio) : null;
-    const card = h('article', { class: 'ex', id: 'ex-' + it.id, 'data-id': it.id, 'data-type': it.type }, head, it.type !== 'listen' && it.audio ? AudioPlayer(it.audio) : null, body, tx, links, hintBox, explBox, tools, fb, follow, extra,
+    const sample = it.sample ? h('details', { class: 'tutor-only model-ans' }, h('summary', null, it.sample.src === 'tb' ? 'Teacher’s Book: suggested answers' : 'Образец ответа — подготовлен для платформы (не из Teacher’s Book)'), h('div', { html: it.sample.html })) : null;
+    const after = (it.boxes || []).filter(b => b.after).map(Box);
+    const card = h('article', { class: 'ex', id: 'ex-' + it.id, 'data-id': it.id, 'data-type': it.type }, head, it.type !== 'listen' && it.audio ? AudioPlayer(it.audio) : null, body, tx, after, links, hintBox, explBox, tools, fb, sample, follow, extra,
       h('div', { class: 'ex-foot' }, ask, h('div', { class: 'tutor-only tc-wrap' }, tcomment)));
 
     card.addEventListener('focusin', () => { if (card._seen) return; card._seen = true; document.dispatchEvent(new CustomEvent('exercise-focus', { detail: { id: it.id, type: it.type === 'listen' ? (it.inner || {}).type || 'listen' : it.type, listen: it.type === 'listen', hint: !!it.hint } })); });
@@ -178,7 +224,7 @@
         src.frameTitle ? h('div', { class: 'frame-bar' }, src.frame === 'blog' ? h('span', { 'aria-hidden': 'true' }, '≡ ') : null, src.frameTitle) : null,
         src.heading ? h('h4', { class: 'frame-h' }, src.heading) : null,
         src.meta ? h('div', { class: 'frame-meta' }, src.meta) : null, paras, src.source ? h('p', { class: 'src' }, src.source) : null);
-    } else body = h('div', { class: 'glines' }, paras);
+    } else body = h('div', { class: 'glines' + (src.cols ? ' cols' : '') }, paras);
     const wrap = h('div', null, intro, bankWrap, body);
     const graded = () => gaps.filter(g => g.kind !== 'free');
     function okFor(g, groups) {
@@ -204,9 +250,9 @@
       check: keyless ? null : evalGaps,
       retry: keyless ? null : () => { graded().forEach(g => { if (!g.ok) { g.el.value = ''; g.el.classList.remove('bad', 'close'); } }); paintBank(); },
       reset: () => { gaps.forEach(g => { g.el.value = ''; g.el.classList.remove('ok', 'bad', 'close'); g.mk && g.mk.set(null); }); paintBank(); },
-      key: keyless ? () => toast('Ключ появится вместе с аудио') : () => { graded().forEach(g => { g.el.value = [].concat(g.seg.a)[0]; }); gaps.filter(g => g.kind === 'free' && g.seg.key).forEach(g => { g.el.value = g.seg.key; }); evalGaps(); paintBank(); },
+      key: keyless ? () => toast('Ключ появится вместе с аудио') : () => { const used = {}; graded().forEach(g => { const opts = [].concat(g.seg.a); if (g.seg.group) { const k = used[g.seg.group] = used[g.seg.group] || []; const v = opts.find(o => !k.includes(o)) || opts[0]; k.push(v); g.el.value = v; } else g.el.value = opts[0]; }); gaps.filter(g => g.kind === 'free' && g.seg.key).forEach(g => { g.el.value = g.seg.key; }); evalGaps(); paintBank(); },
       setState: st => { if (Array.isArray(st)) gaps.forEach((g, i) => { g.el.value = st[i] || ''; }); paintBank(); },
-      tutorSave: keyless ? () => { const m = gaps.filter(g => g.mk).map(g => g.mk.get()); if (m.some(x => x === null)) { toast('Отметьте ✓ или ✗ у каждого ответа'); return null; } return { score: m.filter(Boolean).length, max: m.length, note: 'Оценено преподавателем.' }; } : null
+      tutorSave: keyless ? () => { const m = gaps.filter(g => g.mk).map(g => g.mk.get()); if (m.some(x => x === null)) { toast('Отметьте ✓ или ✗ у каждого ответа'); return null; } return { score: m.filter(Boolean).length, max: m.length, note: 'Оценено учителем.' }; } : null
     };
   }
 
@@ -240,7 +286,7 @@
       reset: () => qs.forEach(r => { r.sel = null; paint(r); r.mk && r.mk.set(null); }),
       key: keyless ? () => toast('Ключ появится вместе с аудио') : () => qs.forEach(r => { r.sel = r.q.a; paint(r); r.btns[r.sel].classList.add('ok'); }),
       setState: s => { if (Array.isArray(s)) qs.forEach((r, i) => { r.sel = s[i] == null ? null : s[i]; paint(r); }); },
-      tutorSave: keyless ? () => { const m = qs.map(r => r.mk.get()); if (m.some(x => x === null)) { toast('Отметьте ✓ или ✗ у каждого ответа'); return null; } return { score: m.filter(Boolean).length, max: m.length, note: 'Оценено преподавателем.' }; } : null
+      tutorSave: keyless ? () => { const m = qs.map(r => r.mk.get()); if (m.some(x => x === null)) { toast('Отметьте ✓ или ✗ у каждого ответа'); return null; } return { score: m.filter(Boolean).length, max: m.length, note: 'Оценено учителем.' }; } : null
     };
   }
 
@@ -249,15 +295,16 @@
     const src = inner || it; const rows = []; const save = autosave(it, () => rows.map(r => r.ta.value));
     const el = h('ol', { class: 'openq', start: src.start || null }, src.questions.map((q, qi) => {
       const ta = h('textarea', { class: 'inp', rows: src.rows || 2, 'aria-label': q || ('Answer ' + (qi + 1)) }); ta.addEventListener('input', save);
-      const mk = Marker(); const model = src.key && src.key[qi] ? h('div', { class: 'model', hidden: true }, h('b', null, 'Key: '), src.key[qi]) : null;
+      const mk = src.free ? { el: null, get: () => true, set: () => {} } : Marker(); const model = src.key && src.key[qi] ? h('div', { class: 'model tutor-only', hidden: true }, h('b', null, 'Key: '), src.key[qi]) : null;
       rows.push({ ta, mk, model });
       return h('li', null, h('div', { class: 'mq-q' }, h('span', { html: md(q || '') }), mk.el), ta, model);
     }));
     return {
       el, reset: () => rows.forEach(r => { r.ta.value = ''; r.mk.set(null); }),
       setState: s => { if (Array.isArray(s)) rows.forEach((r, i) => { r.ta.value = s[i] || ''; }); },
-      key: () => { if (!src.key) { toast('Ответы учеников свободные — ключа нет'); return; } rows.forEach(r => { if (r.model) r.model.hidden = !r.model.hidden; }); },
-      tutorSave: () => { const m = rows.map(r => r.mk.get()); if (m.some(x => x === null)) { toast('Отметьте ✓ или ✗ у каждого ответа'); return null; } return { score: m.filter(Boolean).length, max: m.length, note: 'Оценено преподавателем.' }; }
+      key: src.key ? () => { rows.forEach(r => { if (r.model) r.model.hidden = !r.model.hidden; }); } : null,
+      tutorSave: src.free ? null : () => { const m = rows.map(r => r.mk.get()); if (m.some(x => x === null)) { toast('Отметьте ✓ или ✗ у каждого ответа'); return null; } return { score: m.filter(Boolean).length, max: m.length, note: 'Оценено учителем.' }; },
+      done: src.free ? () => Store.markDone(it.id) : null, doneLabel: 'Готово ✓'
     };
   }
 
@@ -352,23 +399,28 @@
   }
 
   /* =============== INLINE CHOICE (Ex.11) =============== */
+  /* Выбор вариантов прямо в тексте: it.text (сплошной текст) или it.lines (нумерованные предложения).
+     Сегмент: { o:[...], a: индекс | [индексы, если верны оба] } */
   function Inline(it) {
     const items = []; const save = autosave(it, () => items.map(x => x.sel));
-    const kids = it.text.map(seg => {
-      if (typeof seg === 'string') return document.createTextNode(seg);
+    const okIdx = seg => [].concat(seg.a);
+    const mk = (seg, num) => {
+      if (typeof seg === 'string') return h('span', { html: md(seg) });
       const n = items.length + 1; const rec = { seg, sel: null, btns: [] };
-      const grp = h('span', { class: 'ich', role: 'radiogroup', 'aria-label': 'Choice ' + n }, h('sup', { class: 'gn' }, n),
+      const grp = h('span', { class: 'ich', role: 'radiogroup', 'aria-label': 'Choice ' + n }, num ? h('sup', { class: 'gn' }, n) : null,
         seg.o.map((o, oi) => { const b = h('button', { class: 'ich-o', role: 'radio', 'aria-checked': 'false', onclick: () => { rec.sel = oi; paint(rec); save(); } }, o); rec.btns.push(b); return b; }).reduce((a, b, i) => { if (i) a.push(h('span', { class: 'sl', 'aria-hidden': 'true' }, '/')); a.push(b); return a; }, []));
       items.push(rec); return grp;
-    });
+    };
     function paint(r) { r.btns.forEach((b, i) => { b.classList.toggle('sel', i === r.sel); b.setAttribute('aria-checked', String(i === r.sel)); b.classList.remove('ok', 'bad'); }); }
-    const el = h('div', { class: 'frame journal' }, h('div', { class: 'frame-bar' }, it.frameTitle), h('h4', { class: 'frame-h' }, it.heading), h('div', { class: 'frame-meta' }, it.meta), h('p', { class: 'itext' }, kids));
+    let el;
+    if (it.lines) el = h('div', { class: 'glines ilines' }, it.lines.map((ln, li) => h('p', { class: 'gline numbered' }, h('b', { class: 'ln' }, (li + 1) + ' '), h('span', { class: 'gl-body' }, ln.map(s => mk(s, false))))));
+    else el = h('div', { class: 'frame ' + (it.frame || 'journal') }, it.frameTitle ? h('div', { class: 'frame-bar' }, it.frameTitle) : null, it.heading ? h('h4', { class: 'frame-h' }, it.heading) : null, it.meta ? h('div', { class: 'frame-meta' }, it.meta) : null, h('p', { class: 'itext' }, it.text.map(s => mk(s, true))));
     return {
       el,
-      check: () => { let s = 0; items.forEach(r => { r.btns.forEach(b => b.classList.remove('ok', 'bad')); r.ok = r.sel === r.seg.a; if (r.ok) { s++; r.btns[r.sel].classList.add('ok'); } else if (r.sel != null) r.btns[r.sel].classList.add('bad'); }); return { score: s, max: items.length }; },
+      check: () => { let s = 0; items.forEach(r => { r.btns.forEach(b => b.classList.remove('ok', 'bad')); r.ok = r.sel != null && okIdx(r.seg).includes(r.sel); if (r.ok) { s++; r.btns[r.sel].classList.add('ok'); } else if (r.sel != null) r.btns[r.sel].classList.add('bad'); }); return { score: s, max: items.length }; },
       retry: () => items.forEach(r => { if (!r.ok) { r.sel = null; paint(r); } }),
       reset: () => items.forEach(r => { r.sel = null; paint(r); }),
-      key: () => items.forEach(r => { r.sel = r.seg.a; paint(r); r.btns[r.sel].classList.add('ok'); }),
+      key: () => items.forEach(r => { r.sel = okIdx(r.seg)[0]; paint(r); okIdx(r.seg).forEach(i => r.btns[i].classList.add('ok')); }),
       setState: s => { if (Array.isArray(s)) items.forEach((r, i) => { r.sel = s[i] == null ? null : s[i]; paint(r); }); }
     };
   }
@@ -434,16 +486,16 @@
   /* =============== ORDER / WRITE QUESTIONS (Ex.12) =============== */
   function Order(it) {
     const rows = []; const save = autosave(it, () => rows.map(r => [r.inp.value, r.ans.value]));
-    const el = h('ol', { class: 'order' }, it.items.map((x, i) => {
-      const inp = h('input', { class: 'inp', type: 'text', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Question ' + (i + 1), placeholder: 'Write the question…' });
-      const ans = h('input', { class: 'inp ans', type: 'text', placeholder: 'Your answer (ask & answer)', 'aria-label': 'Answer ' + (i + 1) });
+    const el = h('ol', { class: 'order' + (it.items.some(x => x.img) ? ' with-img' : '') }, it.items.map((x, i) => {
+      const inp = h('input', { class: 'inp', type: 'text', autocomplete: 'off', spellcheck: 'false', 'aria-label': (it.ph || 'Sentence') + ' ' + (i + 1), placeholder: it.ph || 'Write the question…' });
+      const ans = it.noAns ? h('input', { type: 'hidden' }) : h('input', { class: 'inp ans', type: 'text', placeholder: 'Your answer (ask & answer)', 'aria-label': 'Answer ' + (i + 1) });
       inp.addEventListener('input', () => { inp.classList.remove('ok', 'bad', 'close'); save(); }); ans.addEventListener('input', save);
       const r = { x, inp, ans }; rows.push(r);
-      return h('li', null, h('div', { class: 'cue' }, x.cue), inp, ans);
+      return h('li', null, x.img ? h('button', { class: 'ord-img fzoom', 'aria-label': 'Увеличить картинку ' + (i + 1), onclick: () => Lightbox(x.img, x.cue) }, h('img', { src: x.img, alt: x.cue, loading: 'lazy', width: 400, height: 300 })) : null, h('div', { class: 'ord-main' }, h('div', { class: 'cue' }, x.cue), inp, it.noAns ? null : ans));
     }));
     return {
       el,
-      check: () => { let s = 0; rows.forEach(r => { const ok = matches(r.inp.value, r.x.a, it.strict ? { strict: true } : null); r.ok = ok; r.inp.classList.toggle('ok', ok); r.inp.classList.toggle('bad', !ok); r.inp.classList.toggle('close', !ok && closeTo(r.inp.value, r.x.a)); if (ok) s++; }); return { score: s, max: rows.length, note: 'Проверяются порядок слов, время и орфография. Ответы на вопросы — устно с преподавателем.' }; },
+      check: () => { let s = 0; rows.forEach(r => { const ok = matches(r.inp.value, r.x.a, it.strict ? { strict: true } : null); r.ok = ok; r.inp.classList.toggle('ok', ok); r.inp.classList.toggle('bad', !ok); r.inp.classList.toggle('close', !ok && closeTo(r.inp.value, r.x.a)); if (ok) s++; }); return { score: s, max: rows.length, note: it.noAns ? 'Проверяются время, порядок слов и орфография.' : 'Проверяются порядок слов, время и орфография. Ответы на вопросы — устно.' }; },
       retry: () => rows.forEach(r => { if (!r.ok) { r.inp.value = ''; r.inp.classList.remove('bad', 'close'); } }),
       reset: () => rows.forEach(r => { r.inp.value = ''; r.ans.value = ''; r.inp.classList.remove('ok', 'bad', 'close'); }),
       key: () => rows.forEach(r => { r.inp.value = r.x.a[0]; }),
@@ -522,7 +574,7 @@
 
   /* =============== WRITING (OGE email) =============== */
   function Writing(it) {
-    const ta = h('textarea', { class: 'inp write', rows: 12, 'aria-label': 'Your email', placeholder: 'Dear Sam,\n\nThanks for your email…' });
+    const ta = h('textarea', { class: 'inp write', rows: 12, 'aria-label': it.aria || 'Your text', placeholder: it.ph || '' });
     const wc = h('div', { class: 'wc' });
     const allChecks = [
       ['Объём ' + it.min + '–' + it.max + ' слов', t => { const n = words(t); return n >= (it.min || 1) && n <= (it.max || 9999); }],
@@ -537,14 +589,14 @@
     const checks = it.checks === false ? (it.min ? [allChecks[0]] : []) : allChecks;
     const list = h('ul', { class: 'fchecks' });
     function words(t) { return (t.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g) || []).length; }
-    function paint() { const t = ta.value; const n = words(t); wc.textContent = n + ' words'; wc.className = 'wc ' + (n === 0 || !it.min ? '' : n < it.min ? 'low' : n > it.max ? 'high' : 'ok'); list.innerHTML = ''; checks.forEach(([l, f]) => list.appendChild(h('li', { class: f(t) ? 'ok' : '' }, (f(t) ? '✓ ' : '○ ') + l))); }
+    function paint() { const t = ta.value; const n = words(t); wc.textContent = n + ' words'; const lo = it.min || (it.target && it.target[0]), hi = it.max || (it.target && it.target[1]); wc.textContent = n + ' words' + (lo ? ' · цель ≈ ' + (it.target ? it.target[2] || lo + '–' + hi : lo + '–' + hi) : ''); wc.className = 'wc ' + (n === 0 || !lo ? '' : n < lo ? 'low' : n > hi ? 'high' : 'ok'); list.innerHTML = ''; checks.forEach(([l, f]) => list.appendChild(h('li', { class: f(t) ? 'ok' : '' }, (f(t) ? '✓ ' : '○ ') + l))); }
     ta.addEventListener('input', () => { paint(); clearTimeout(ta._t); ta._t = setTimeout(() => Store.saveState(it.id, ta.value), 300); });
-    const crit = !it.criteria ? null : h('div', { class: 'crit tutor-only' }, h('div', { class: 'muted small' }, it.critTitle || 'Оценка преподавателя по критериям ФИПИ:'), it.criteria.map((c, ci) => h('label', { class: 'crit-r' }, h('span', null, c), h('select', { class: 'inp sel', onchange: e => { const ex = Store.ex(it.id); ex.crit = ex.crit || []; ex.crit[ci] = e.target.value; Store.save(); } }, ['—', 'не выполнено', 'частично', 'полностью'].map(o => h('option', null, o))))));
+    const crit = !it.criteria ? null : h('div', { class: 'crit tutor-only' }, h('div', { class: 'muted small' }, it.critTitle || 'Оценка учителя по критериям ФИПИ:'), it.criteria.map((c, ci) => h('label', { class: 'crit-r' }, h('span', null, c), h('select', { class: 'inp sel', onchange: e => { const ex = Store.ex(it.id); ex.crit = ex.crit || []; ex.crit[ci] = e.target.value; Store.save(); } }, ['—', 'не выполнено', 'частично', 'полностью'].map(o => h('option', null, o))))));
     paint();
     return {
-      el: h('div', { class: 'writing' }, it.letter ? h('blockquote', { class: 'letter', html: Array.isArray(it.letter) ? it.letter.map(l => '<p>' + md(l) + '</p>').join('') : md(it.letter) }) : null, it.task ? h('p', { class: 'task' }, it.task) : null, it.bullets ? h('ul', { class: 'wbul' }, it.bullets.map(b => h('li', null, b))) : null, ta, h('div', { class: 'wbar' }, wc, h('span', { class: 'muted small' }, 'Сайт проверяет только формальные признаки. Содержание и язык оценивает преподаватель.')), list, it.criteria ? crit : null, it.model ? h('details', { class: 'tutor-only model-ans' }, h('summary', null, 'Model answer'), h('div', { html: it.model })) : null),
+      el: h('div', { class: 'writing' }, it.letter ? h('blockquote', { class: 'letter', html: Array.isArray(it.letter) ? it.letter.map(l => '<p>' + md(l) + '</p>').join('') : md(it.letter) }) : null, it.task ? h('p', { class: 'task' }, it.task) : null, it.bullets ? h('ul', { class: 'wbul' }, it.bullets.map(b => h('li', null, b))) : null, ta, h('div', { class: 'wbar' }, wc, h('span', { class: 'muted small' }, 'Сайт считает только слова. Содержание и язык оценивает учитель — ответ не «проверен системой».')), list, it.criteria ? crit : null, it.model ? h('details', { class: 'tutor-only model-ans' }, h('summary', null, 'Model answer'), h('div', { html: it.model })) : null),
       check: checks.length ? () => { const t = ta.value; const sc = checks.filter(([, f]) => f(t)).length; return { score: sc, max: checks.length, note: 'Формальные признаки письма.' }; } : null,
-      done: checks.length ? null : () => Store.markDone(it.id), doneLabel: 'Done — show to tutor',
+      done: checks.length ? null : () => Store.markDone(it.id), doneLabel: 'Готово — показать учителю',
       reset: () => { ta.value = ''; paint(); },
       setState: s => { if (typeof s === 'string') { ta.value = s; paint(); } }
     };
@@ -563,8 +615,107 @@
     };
   }
 
+  /* =============== SORT: разложить слова по группам =============== */
+  function Sort(it) {
+    const rows = []; const save = autosave(it, () => rows.map(r => r.sel));
+    const el = h('div', { class: 'sort' },
+      h('div', { class: 'sort-cats', 'aria-hidden': 'true' }, it.cats.map((c, i) => h('span', { class: 'sc c' + i }, c))),
+      h('ul', { class: 'sort-list' }, it.words.map(w => {
+        const r = { w, sel: null, btns: [] };
+        const btns = it.cats.map((c, ci) => { const b = h('button', { class: 'sc-b c' + ci, 'aria-pressed': 'false', 'aria-label': w.w + ' — ' + c, onclick: () => { r.sel = r.sel === ci ? null : ci; paint(r); save(); } }, c); r.btns.push(b); return b; });
+        rows.push(r);
+        return h('li', null, h('b', { class: 'sw' }, w.w), h('span', { class: 'sc-bs', role: 'group', 'aria-label': w.w }, btns));
+      })));
+    function paint(r) { r.btns.forEach((b, i) => { b.classList.toggle('on', i === r.sel); b.setAttribute('aria-pressed', String(i === r.sel)); b.classList.remove('ok', 'bad'); }); }
+    return {
+      el,
+      check: () => { let s = 0; rows.forEach(r => { r.btns.forEach(b => b.classList.remove('ok', 'bad')); r.ok = r.sel != null && [].concat(r.w.c).includes(r.sel); if (r.ok) s++; if (r.sel != null) r.btns[r.sel].classList.add(r.ok ? 'ok' : 'bad'); }); return { score: s, max: rows.length }; },
+      retry: () => rows.forEach(r => { if (!r.ok) { r.sel = null; paint(r); } }),
+      reset: () => rows.forEach(r => { r.sel = null; paint(r); }),
+      key: () => rows.forEach(r => { r.sel = [].concat(r.w.c)[0]; paint(r); r.btns[r.sel].classList.add('ok'); }),
+      setState: s => { if (Array.isArray(s)) rows.forEach((r, i) => { r.sel = s[i] == null ? null : s[i]; paint(r); }); }
+    };
+  }
+
+  /* =============== GRID: отметить все подходящие клетки (тема ↔ вопрос) =============== */
+  function Grid(it) {
+    const cells = []; let on = new Set();
+    const save = () => Store.saveState(it.id, [...on]);
+    const want = new Set(); it.rows.forEach((r, ri) => r.a.forEach(c => want.add(ri + ':' + c)));
+    const el = h('div', { class: 'gridx-wrap' }, h('table', { class: 'gridx' },
+      h('thead', null, h('tr', null, h('th', { scope: 'col' }, it.corner || ''), it.cols.map(c => h('th', { scope: 'col' }, c)))),
+      h('tbody', null, it.rows.map((r, ri) => h('tr', null, h('th', { scope: 'row' }, r.t), it.cols.map((c, ci) => {
+        const k = ri + ':' + ci; const b = h('button', { class: 'gx', 'aria-pressed': 'false', 'aria-label': r.t + ' — ' + c, onclick: () => { on.has(k) ? on.delete(k) : on.add(k); paint(); save(); } }); cells.push([k, b]);
+        return h('td', null, b);
+      }))))));
+    function paint() { cells.forEach(([k, b]) => { b.classList.toggle('on', on.has(k)); b.setAttribute('aria-pressed', String(on.has(k))); b.classList.remove('ok', 'bad', 'miss'); b.textContent = on.has(k) ? '✓' : ''; }); }
+    return {
+      el,
+      check: () => { paint(); let s = 0; cells.forEach(([k, b]) => { if (on.has(k) && want.has(k)) { s++; b.classList.add('ok'); } else if (on.has(k)) { s--; b.classList.add('bad'); } else if (want.has(k)) b.classList.add('miss'); }); return { score: Math.max(0, s), max: want.size, note: 'Лишняя отметка = −1. Пунктир — пропущенная отметка.' }; },
+      retry: () => { on = new Set([...on].filter(k => want.has(k))); paint(); },
+      reset: () => { on.clear(); paint(); }, key: () => { on = new Set(want); paint(); },
+      setState: st => { if (Array.isArray(st)) { on = new Set(st); paint(); } }
+    };
+  }
+
+  /* =============== TICK OR FIX: верно ✓ или исправь =============== */
+  function TickFix(it) {
+    const rows = []; const save = autosave(it, () => rows.map(r => [r.tick, r.inp.value]));
+    const el = h('ol', { class: 'tickfix' }, it.items.map((x, i) => {
+      const r = { x, tick: false };
+      r.btn = h('button', { class: 'tf-tick', 'aria-pressed': 'false', 'aria-label': 'Предложение ' + (i + 1) + ' верно', onclick: () => { r.tick = !r.tick; if (r.tick) r.inp.value = ''; paint(r); save(); } }, '✓');
+      r.inp = h('input', { class: 'inp', type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'correction', 'aria-label': 'Исправление ' + (i + 1) });
+      r.inp.addEventListener('input', () => { if (r.inp.value) r.tick = false; paint(r); save(); });
+      rows.push(r);
+      return h('li', null, h('span', { class: 'tf-s', html: md(x.s) }), h('span', { class: 'tf-ctl' }, r.btn, h('span', { class: 'muted small' }, 'или'), r.inp));
+    }));
+    function paint(r) { r.btn.classList.toggle('on', r.tick); r.btn.setAttribute('aria-pressed', String(r.tick)); r.btn.classList.remove('ok', 'bad'); r.inp.classList.remove('ok', 'bad', 'close'); }
+    return {
+      el,
+      check: () => { let s = 0; rows.forEach(r => { paint(r); r.ok = r.x.ok ? r.tick : matches(r.inp.value, r.x.a); if (r.ok) s++; if (r.x.ok) { r.btn.classList.add(r.ok ? 'ok' : 'bad'); if (!r.ok && r.inp.value) r.inp.classList.add('bad'); } else { r.inp.classList.add(r.ok ? 'ok' : 'bad'); if (r.tick) r.btn.classList.add('bad'); if (!r.ok && closeTo(r.inp.value, r.x.a)) r.inp.classList.add('close'); } }); return { score: s, max: rows.length }; },
+      retry: () => rows.forEach(r => { if (!r.ok) { r.tick = false; r.inp.value = ''; paint(r); } }),
+      reset: () => rows.forEach(r => { r.tick = false; r.inp.value = ''; paint(r); }),
+      key: () => rows.forEach(r => { r.tick = !!r.x.ok; r.inp.value = r.x.ok ? '' : r.x.a[0]; paint(r); (r.x.ok ? r.btn : r.inp).classList.add('ok'); }),
+      setState: st => { if (Array.isArray(st)) rows.forEach((r, i) => { if (st[i]) { r.tick = !!st[i][0]; r.inp.value = st[i][1] || ''; paint(r); } }); }
+    };
+  }
+
+  /* =============== DRAW: рисунок во время прослушивания =============== */
+  function Draw(it) {
+    const cv = h('canvas', { class: 'pad', width: 900, height: 560, 'aria-label': 'Поле для рисунка. Рисуйте мышью, пальцем или стилусом.' });
+    const ctx = cv.getContext('2d'); let drawing = false, color = '#16161D', size = 4;
+    const fill = () => { ctx.fillStyle = '#FFFDF8'; ctx.fillRect(0, 0, cv.width, cv.height); };
+    fill();
+    const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+    cv.addEventListener('pointerdown', e => { drawing = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + .1, y + .1); ctx.strokeStyle = color; ctx.lineWidth = size; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(); });
+    cv.addEventListener('pointermove', e => { if (!drawing) return; const [x, y] = pos(e); ctx.lineTo(x, y); ctx.stroke(); });
+    const end = () => { if (!drawing) return; drawing = false; try { Store.saveState(it.id, cv.toDataURL('image/webp', .6)); } catch (e) { /* storage full */ } };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    const colors = ['#16161D', '#E0262F', '#3DAA82', '#3D3BFF', '#FF7A00', '#FFFDF8'];
+    const sw = colors.map((c, i) => h('button', { class: 'pad-c' + (i === 0 ? ' on' : ''), style: { background: c }, 'aria-label': i === 5 ? 'Ластик' : 'Цвет ' + (i + 1), title: i === 5 ? 'Ластик' : null, onclick: e => { color = c; size = i === 5 ? 22 : 4; sw.forEach(b => b.classList.remove('on')); e.currentTarget.classList.add('on'); } }, i === 5 ? '⌫' : ''));
+    const photo = it.reveal ? h('figure', { class: 'bfig pad-photo', hidden: true }, h('img', { src: it.reveal.src, alt: it.reveal.alt, loading: 'lazy' }), h('figcaption', null, it.reveal.cap)) : null;
+    const showBtn = it.reveal ? h('button', { class: 'btn ghost', onclick: () => { photo.hidden = !photo.hidden; showBtn.textContent = photo.hidden ? '👀 Сравнить с фото' : 'Скрыть фото'; } }, '👀 Сравнить с фото') : null;
+    if (showBtn) showBtn.hidden = !Store.ex(it.id).done;
+    return {
+      el: h('div', { class: 'draw' }, h('div', { class: 'pad-tools' }, sw), cv, h('div', { class: 'row' }, showBtn), photo),
+      done: () => { Store.markDone(it.id); if (showBtn) showBtn.hidden = false; }, doneLabel: 'Рисунок готов ✓',
+      reset: () => { fill(); },
+      setState: s => { if (typeof s === 'string' && s.startsWith('data:image')) { const im = new Image(); im.onload = () => ctx.drawImage(im, 0, 0, cv.width, cv.height); im.src = s; } }
+    };
+  }
+
+  /* =============== PLAN: таблица-план (Writing) =============== */
+  function Plan(it) {
+    const tas = []; const save = autosave(it, () => tas.map(t => t.value));
+    const el = h('div', { class: 'wtable-wrap' }, h('table', { class: 'wtable plan' },
+      h('thead', null, h('tr', null, ['Part', 'Purpose', 'Useful phrases', 'My notes'].map(t => h('th', null, t)))),
+      h('tbody', null, it.rows.map((r, i) => { const ta = h('textarea', { class: 'inp', rows: 3, 'aria-label': r.part + ' — my notes' }); ta.addEventListener('input', save); tas.push(ta);
+        return h('tr', null, h('th', { scope: 'row' }, r.part), h('td', null, r.purpose), h('td', { html: r.phrases.map(md).join('<br>') }), h('td', null, ta)); }))));
+    return { el, done: () => Store.markDone(it.id), doneLabel: 'План готов ✓', reset: () => tas.forEach(t => t.value = ''), setState: s => { if (Array.isArray(s)) tas.forEach((t, i) => { t.value = s[i] || ''; }); } };
+  }
+
   /* =============== Factory =============== */
-  const MAP = { gaps: Gaps, mcq: MCQ, open: Open, listen: Listen, inline: Inline, underline: Underline, rulebox: RuleBox, match: Match, order: Order, rank: Rank, discuss: Discuss, interview: Interview, writing: Writing, review: Review, tapfind: TapFind, multi: Multi, checklist: Checklist, scores: Scores, reference: Reference };
+  const MAP = { sort: Sort, grid: Grid, tickfix: TickFix, draw: Draw, plan: Plan, gaps: Gaps, mcq: MCQ, open: Open, listen: Listen, inline: Inline, underline: Underline, rulebox: RuleBox, match: Match, order: Order, rank: Rank, discuss: Discuss, interview: Interview, writing: Writing, review: Review, tapfind: TapFind, multi: Multi, checklist: Checklist, scores: Scores, reference: Reference };
   function render(it) {
     const api = MAP[it.type](it);
     // keyless tutor-scored items get a dedicated button
@@ -572,7 +723,7 @@
     if (api.tutorSave) {
       const b = h('button', { class: 'btn primary', onclick: () => { const r = api.tutorSave(); if (r) card._show(r); } }, 'Save tutor marks');
       card.querySelector('.ex-tools').prepend(b);
-      card.querySelector('.ex-tools').prepend(h('span', { class: 'keyless' }, 'Ключ не опубликован на странице — преподаватель отмечает ✓/✗.'));
+      card.querySelector('.ex-tools').prepend(h('span', { class: 'keyless' }, 'Ключ не опубликован на странице — учитель отмечает ✓/✗.'));
     }
     const st = Store.ex(it.id).state; if (st != null && api.setState) { try { api.setState(st); } catch (e) { /* stale state */ } }
     return card;

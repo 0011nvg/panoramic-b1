@@ -105,7 +105,7 @@
     const graded = items.filter(starable);
     const words = VOCAB.filter(v => v.lesson === lessonId);
     const out = [];
-    out.push({ id: 'core', icon: '🧭', title: 'Core route', desc: 'Выполни все основные (Core) задания урока', cur: core.filter(it => ex[it.id] && ex[it.id].done).length, goal: core.length, xp: 25 });
+    out.push({ id: 'core', icon: '🧭', title: 'Lesson route', desc: 'Выполни все задания урока', cur: core.filter(it => ex[it.id] && ex[it.id].done).length, goal: core.length, xp: 25 });
     if (graded.length) { const goal = Math.min(3, graded.length); out.push({ id: 'stars', icon: '⭐', title: 'Sharp eye', desc: 'Получи ★★★ (100 %) в ' + goal + ' заданиях с проверкой — можно после Try Again', cur: Math.min(goal, graded.filter(it => stars(it.id) === 3).length), goal, xp: 20 }); }
     else { const talk = items.filter(it => ['discuss', 'interview', 'writing'].includes(it.type)); if (talk.length) out.push({ id: 'talk', icon: '🗣', title: 'Speak up', desc: 'Выполни все задания на говорение и письмо', cur: talk.filter(it => ex[it.id] && ex[it.id].done).length, goal: talk.length, xp: 20 }); }
     if (words.length) { const goal = Math.min(6, words.length); out.push({ id: 'words', icon: '🧠', title: 'Word keeper', desc: 'Вспомни по памяти ' + goal + ' слов урока (Learn with Keks, Type, Context)', cur: Math.min(goal, words.filter(v => SRS.st(v.w).box >= 2).length), goal, xp: 20 }); }
