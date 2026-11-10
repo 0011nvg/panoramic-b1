@@ -1,7 +1,7 @@
 /* ========== CORE: storage, profiles, answer checking, helpers ========== */
 (function () {
   'use strict';
-  const NS = 'iestudio.v1';
+  const NS = 'osb1.v1';   // Optimise Stars B1 (прогресс Panoramic хранился под 'iestudio.v1' и сюда не смешивается)
   const LS = {
     get(k, d) { try { const v = localStorage.getItem(NS + '.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem(NS + '.' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
@@ -36,9 +36,10 @@
     ex(id) { const d = this.data(); return d.ex[id] || (d.ex[id] = { attempts: [], state: null, score: null, max: null, done: false }); },
     record(id, score, max, extra) {
       const e = this.ex(id); e.score = score; e.max = max; e.done = true; e.updated = Date.now();
-      e.attempts.push({ t: Date.now(), score, max });
-      if (e.best == null || score / (max || 1) > e.best) e.best = max ? score / max : 1;
-      Object.assign(e, extra || {});
+      e.attempts.push({ t: Date.now(), score, max, peek: extra && extra.peek ? 1 : undefined });
+      if (!(extra && extra.peek) && (e.best == null || score / (max || 1) > e.best)) e.best = max ? score / max : 1;
+      if (e.best == null) e.best = 0;
+      Object.assign(e, extra || {}); delete e.peek;
       this.data().log.push({ t: Date.now(), id, score, max }); this.save();
     },
     markDone(id, v) { const e = this.ex(id); e.done = v !== false; e.updated = Date.now(); this.save(); },
@@ -134,7 +135,7 @@
     return el;
   }
   function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-  function md(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<i>$1</i>'); }
+  function md(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/==(.+?)==/g, '<mark>$1</mark>'); }
   function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function toast(msg, kind) {
     let t = document.getElementById('toast'); if (!t) { t = h('div', { id: 'toast', role: 'status', 'aria-live': 'polite' }); document.body.appendChild(t); }
@@ -164,9 +165,11 @@
   }
   function download(name, text, type) { const b = new Blob([text], { type: type || 'application/json' }); const a = h('a', { href: URL.createObjectURL(b), download: name }); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
 
-  /* ---------- Tutor mode (display only) ---------- */
-  /* Код преподавателя: хранится только хэш. Сменить код — tools/tutor-code.md.
-     Это защита «от учеников», а не от взломщика: сайт статический. */
+  /* ---------- Teacher mode (display only) ---------- */
+  /* Код учителя: в файлах хранится только хэш (соль 'panoramic-b1:' оставлена прежней, поэтому прежний код
+     с сайта Panoramic продолжает работать). Сменить код — откройте tools/teacher-code.html, введите новый код
+     и вставьте две строки результата вместо TUTOR_HASH / TUTOR_FNV ниже. Подробно — tools/teacher-code.md.
+     Это защита интерфейса «от учеников», а не защита данных: сайт статический, ключи лежат в js/data-*.js. */
   const TUTOR_HASH = '7fef38690bece016743cd10c985b60710700d05581729394b46dc72644922934', TUTOR_FNV = 'e897088c';
   const SS = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { if (v == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
   const fnv = s => { let x = 2166136261; for (const c of s) { x ^= c.charCodeAt(0); x = Math.imul(x, 16777619) >>> 0; } return x.toString(16); };
@@ -181,8 +184,8 @@
     ask() {
       return new Promise(res => {
         let tries = 0;
-        const inp = h('input', { class: 'inp big', type: 'password', inputmode: 'numeric', autocomplete: 'off', 'aria-label': 'Код преподавателя', maxlength: 40 });
-        const msg = h('p', { class: 'muted small', role: 'status' }, 'Режим преподавателя показывает ключи и заметки. Введите код.');
+        const inp = h('input', { class: 'inp big', type: 'password', autocomplete: 'off', 'aria-label': 'Код учителя', maxlength: 40 });
+        const msg = h('p', { class: 'muted small', role: 'status' }, 'Режим учителя показывает ключи, образцы ответов и заметки. Введите код.');
         const close = v => { ov.remove(); document.removeEventListener('keydown', esc); res(v); };
         const esc = e => { if (e.key === 'Escape') close(false); };
         const go = async () => {
@@ -191,8 +194,8 @@
           if (tries >= 3) { inp.disabled = true; setTimeout(() => { inp.disabled = false; inp.focus(); }, 10000); } else inp.focus();
         };
         inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-        const ov = h('div', { class: 'modal-ov lock-ov', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Код преподавателя' },
-          h('div', { class: 'modal' }, h('h3', null, '🔒 Tutor mode'), msg, inp,
+        const ov = h('div', { class: 'modal-ov lock-ov', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Код учителя' },
+          h('div', { class: 'modal' }, h('h3', null, '🔒 Режим учителя'), msg, inp,
             h('div', { class: 'row end' }, h('button', { class: 'btn ghost', onclick: () => close(false) }, 'Отмена'), h('button', { class: 'btn primary', onclick: go }, 'Войти'))));
         document.body.appendChild(ov); document.addEventListener('keydown', esc); inp.focus();
       });
@@ -204,7 +207,7 @@
 
   /* ---------- Content index ---------- */
   function allItems(lessonId) { const L = LESSONS[lessonId]; const out = []; L.sections.forEach(s => s.items.forEach(it => out.push(Object.assign({ _section: s.id }, it)))); return out; }
-  function gradable(it) { return !['discuss', 'review', 'rank', 'interview', 'writing', 'reference', 'checklist', 'scores'].includes(it.type); }
+  function gradable(it) { return !['discuss', 'review', 'rank', 'interview', 'writing', 'reference', 'checklist', 'scores', 'draw', 'plan'].includes(it.type) && !it.free && !(it.inner && it.inner.free); }
 
   window.Core = { LS, Profiles, Store, norm, variants, matches, closeTo, h, esc, md, shuffle, toast, confirmBox, promptBox, download, Tutor, TutorLock, allItems, gradable };
 })();

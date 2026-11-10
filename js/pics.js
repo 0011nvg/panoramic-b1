@@ -142,10 +142,13 @@
 
   /* ---------- Мелкие элементы ---------- */
   function sectionIcon(sid) { const e = (V().sections || {})[sid] || (/^gr/.test(sid) ? '⚙️' : /^voc/.test(sid) ? '🔤' : null); return e ? img(e, { cls: 'sec-ic', size: 48 }) : null; }
-  function lessonPano(id) { const s = (V().lessons || {})[id]; return s ? pano(s, { cls: 'hero-pano', eager: true }) : null; }
-  function lessonIcon(id) { const s = (V().lessons || {})[id]; return s ? img(s.items[0], { cls: 'lt-pic', size: 48 }) : null; }
+  /* Фото учебника в шапке урока (assets/book) или, если фото нет, панорама из 3D-объектов */
+  function photoHero(sp, cls) { return h('figure', { class: 'hero-photo ' + (cls || '') }, h('img', { src: sp.photo, alt: sp.alt || '', loading: 'eager', decoding: 'async', width: 900, height: 600, style: sp.pos ? { objectPosition: sp.pos } : null, onerror: ev => broken(ev.target) })); }
+  function lessonPano(id) { const s = (V().lessons || {})[id]; return s ? (s.photo ? photoHero(s, 'hero-pano') : pano(s, { cls: 'hero-pano', eager: true })) : null; }
+  function lessonIcon(id) { const s = (V().lessons || {})[id]; return s && s.items ? img(s.items[0], { cls: 'lt-pic', size: 48 }) : null; }
   function unitCover(u) {
     const s = (V().units || {})[u.id]; if (!s) return null;
+    if (s.photo) return h('div', { class: 'ucover photo', 'aria-hidden': 'true' }, h('img', { src: s.photo, alt: '', loading: 'eager', decoding: 'async', width: 1400, height: 400, style: s.pos ? { objectPosition: s.pos } : null }), s.tag ? h('span', { class: 'uc-tag' }, s.tag) : null);
     const f = h('div', { class: 'ucover c-' + s.c, 'aria-hidden': 'true' });
     f.innerHTML = '<svg class="uc-bg" viewBox="0 0 800 160" preserveAspectRatio="none" aria-hidden="true"><path class="uc-w2" d="M0 120 C 140 80 260 150 400 112 S 660 70 800 104 V160 H0Z"/><path class="uc-w1" d="M0 140 C 160 118 300 160 460 138 S 700 118 800 132 V160 H0Z"/><circle class="uc-sun" cx="690" cy="50" r="58"/></svg>';
     s.items.forEach((e, i) => { const el = img(e, { cls: 'uc-o', size: 128 }); el.style.setProperty('--i', i); el.style.setProperty('--d', (i * .5) + 's'); f.appendChild(el); });
