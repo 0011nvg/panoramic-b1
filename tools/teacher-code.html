@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>Новый код учителя</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 16px;background:#F7F4ED;color:#16161D}input,button{font:inherit;padding:10px 14px;border-radius:10px;border:2px solid #16161D}button{background:#3D3BFF;color:#fff;border-color:#3D3BFF;cursor:pointer}pre{background:#fff;border:1px solid #DCD5C7;border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-all}</style>
+</head><body>
+<h1>Новый код учителя</h1>
+<p>Код никуда не отправляется: расчёт идёт в этом браузере. Скопируйте строку результата в <code>js/core.js</code> вместо строки <code>const TUTOR_HASH = …</code>.</p>
+<p><input id="c" type="text" placeholder="Новый код" autocomplete="off"> <button id="go">Получить строки</button></p>
+<pre id="out">—</pre>
+<script>
+document.getElementById('go').onclick = async () => {
+  const code = document.getElementById('c').value.trim(); if (!code) return;
+  const s = 'panoramic-b1:' + code;
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  const hex = [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+  let x = 2166136261; for (const ch of s) { x ^= ch.charCodeAt(0); x = Math.imul(x, 16777619) >>> 0; }
+  document.getElementById('out').textContent = "  const TUTOR_HASH = '" + hex + "', TUTOR_FNV = '" + x.toString(16) + "';";
+};
+</script>
+</body></html>

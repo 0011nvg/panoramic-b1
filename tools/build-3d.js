@@ -11,7 +11,7 @@ const code = e => [...e].map(c => c.codePointAt(0).toString(16)).join('-');
 const resolve = e => { const c = code(e); const variants = [c, c.replace(/-fe0f/g, ''), [...e].map(ch => ch.codePointAt(0).toString(16)).filter(x => x !== 'fe0f').join('-fe0f-') ];
   if (!e.includes('️')) variants.push(c + '-fe0f');
   return variants.find(v => have.has(v)) || null; };
-const files = fs.readdirSync(path.join(root, 'js')).filter(f => f.endsWith('.js') && f !== 'pics-map.js' && !/^data-unit/.test(f));
+const files = fs.readdirSync(path.join(root, 'js')).filter(f => f.endsWith('.js') && f !== 'pics-map.js' && true);
 const found = new Map(); const missing = new Set();
 files.forEach(f => { const t = fs.readFileSync(path.join(root, 'js', f), 'utf8'); for (const m of t.matchAll(re)) { const e = m[0]; if (found.has(e) || missing.has(e)) continue; const r = resolve(e); if (r) found.set(e, r); else missing.add(e); } });
 const out = path.join(root, 'assets', '3d'); fs.mkdirSync(out, { recursive: true });

@@ -1,163 +1,27 @@
-/* =========================================================
-   ВИЗУАЛЬНЫЙ СЛОЙ · данные
-   Отдельно от учебного содержания: задания, ключи и словарь не меняются.
-   3D-объекты — Microsoft Fluent Emoji 3D (MIT), файлы в assets/3d/.
-   Сцены, планы и схемы — оригинальные SVG (js/visual-svg.js).
-   ========================================================= */
+/* Визуальный слой: фото учебника в шапках уроков и на обложках разделов, значки секций.
+   Учебное содержание здесь не хранится. Фото — фрагменты страниц Student’s Book (assets/book/). */
 window.VISUALS = {
-
-  /* ---------- «Панорамы» уроков: цвет фона, 3–5 объектов, вариант композиции ---------- */
-  lessons: {
-    'u0-1': { c: 'blue', lay: 1, items: ['🧠', '💖', '🎧', '🙂'] },
-    'u0-2': { c: 'pink', lay: 2, items: ['👨‍👩‍👧‍👦', '💬', '📱', '🎁'] },
-    'u0-3': { c: 'yellow', lay: 3, items: ['🏠', '🛋️', '🧹', '⏰'] },
-    'u0-4': { c: 'orange', lay: 1, items: ['🌶️', '🍄', '🍓', '🥜'] },
-    'u0-5': { c: 'blue', lay: 2, items: ['🎨', '🎸', '👕', '📷'] },
-    'u0-6': { c: 'pink', lay: 3, items: ['🏰', '⛺', '🌳', '🚲'] },
-    'u0-7': { c: 'yellow', lay: 1, items: ['🎓', '📸', '🗺️', '🏆'] },
-    'u0-8': { c: 'orange', lay: 2, items: ['📜', '🏹', '🐉', '🌲'] },
-    'u0-9': { c: 'blue', lay: 3, items: ['🚀', '🤖', '🔮', '🧬'] },
-    'u0-10': { c: 'pink', lay: 1, items: ['🏃', '🏅', '⏱️', '👟'] },
-    'u0-11': { c: 'yellow', lay: 2, items: ['✈️', '🗣️', '🎒', '💝'] },
-    'u0-12': { c: 'orange', lay: 3, items: ['🌍', '🏙️', '🌾', '⛴️'] },
-
-    'u1-opener': { c: 'yellow', lay: 2, items: ['🐝', '🌼', '📷', '💬'] },
-    'u1-1': { c: 'blue', lay: 1, items: ['🛹', '⛲', '🛍️', '☕'] },
-    'u1-2': { c: 'pink', lay: 3, items: ['👋', '🤗', '👉', '😮'] },
-    'u1-3': { c: 'yellow', lay: 2, items: ['📧', '📲', '💌', '🎂'] },
-    'u1-4': { c: 'blue', lay: 1, items: ['☕', '💬', '🎾', '😲'] },
-    'u1-5': { c: 'orange', lay: 3, items: ['🚴', '📦', '🗽', '🚕'] },
-    'u1-6': { c: 'pink', lay: 2, items: ['✅', '📝', '🏁', '⭐'] },
-    'u1-gr': { c: 'navy', lay: 1, items: ['🧩', '✏️', '📘', '⏰'] },
-    'u1-wb': { c: 'green', lay: 3, items: ['📒', '✏️', '🎧', '🔤'] },
-
-    'u2-opener': { c: 'yellow', lay: 1, items: ['🦗', '🕰️', '⏳', '⌚'] },
-    'u2-1': { c: 'blue', lay: 2, items: ['🧠', '🌀', '📸', '🎈'] },
-    'u2-2': { c: 'yellow', lay: 3, items: ['🏺', '⛏️', '🗿', '📜'] },
-    'u2-3': { c: 'blue', lay: 1, items: ['👵', '📻', '📱', '💿'] },
-    'u2-4': { c: 'pink', lay: 2, items: ['😂', '📚', '💬', '🙈'] },
-    'u2-5': { c: 'orange', lay: 3, items: ['📖', '✒️', '📄', '🐉'] },
-    'u2-6': { c: 'pink', lay: 1, items: ['✅', '📝', '🏁', '⏳'] },
-    'u2-gr': { c: 'navy', lay: 2, items: ['🧩', '🕰️', '📘', '✏️'] },
-    'u2-wb': { c: 'green', lay: 3, items: ['📒', '✏️', '🎧', '⌛'] },
-
-    'u3-opener': { c: 'yellow', lay: 3, items: ['❤️', '🥤', '🌊', '🐚'] },
-    'u3-1': { c: 'blue', lay: 1, items: ['👖', '✊', '🧵', '🎸'] },
-    'u3-2': { c: 'pink', lay: 2, items: ['🤖', '💞', '🦾', '🔋'] },
-    'u3-3': { c: 'yellow', lay: 3, items: ['🌍', '🪧', '🌱', '🧊'] },
-    'u3-4': { c: 'blue', lay: 1, items: ['🎥', '💡', '🌻', '📱'] },
-    'u3-5': { c: 'orange', lay: 2, items: ['🏛️', '🗳️', '📢', '🎤'] },
-    'u3-6': { c: 'pink', lay: 3, items: ['✅', '📝', '🏁', '🌍'] },
-    'u3-gr': { c: 'navy', lay: 1, items: ['🧩', '⏳', '📘', '✏️'] },
-    'u3-wb': { c: 'green', lay: 2, items: ['📒', '✏️', '🎧', '♻️'] }
-  },
-
-  /* ---------- Обложки модулей на главной ---------- */
   units: {
-    u0: { c: 'blue', items: ['🧠', '🏠', '🍓', '🎸', '🏰', '🚀', '🏅', '🌍'], tag: '12 тем повторения A2' },
-    u1: { c: 'pink', items: ['👋', '💬', '🛹', '📲', '🤗', '🚴', '☕'], tag: 'Общение, жесты, small talk' },
-    u2: { c: 'yellow', items: ['🕰️', '🏺', '🧠', '📻', '⏳', '📖', '🦉'], tag: 'Память, прошлое, поколения' },
-    u3: { c: 'orange', items: ['🌍', '👖', '🤖', '🪧', '🗳️', '🌱', '♻️'], tag: 'Как один человек меняет мир' }
+    st: { photo: 'assets/book/st-people.webp', pos: '50% 30%', tag: 'Who we are' },
+    u1: { photo: 'assets/book/u1-opener.webp', pos: '50% 55%', tag: 'House and home' }
   },
-
-  /* ---------- Иконки разделов урока ---------- */
-  sections: {
-    warm: '👋', vocab: '📚', book: '📘', train: '🏋️', oge: '🎯', review: '🏁', ref: '📐',
-    'wb-gr': '⚙️', 'wb-voc': '🔤', 'wb-read': '📖', 'wb-review': '✍️',
-    read: '📖', voc1: '🔤', voc2: '🔤', voc3: '🔤', gr1: '⚙️', gr2: '⚙️', gr3: '⚙️', listen: '🎧'
+  lessons: {
+    'st-1': { photo: 'assets/book/st-people.webp', pos: '35% 30%', items: ['🧑‍🎨'], alt: '' },
+    'st-2': { photo: 'assets/book/st-habits.webp', pos: '50% 40%', items: ['👟'] },
+    'st-3': { photo: 'assets/book/st-asleep.webp', pos: '50% 50%', items: ['😴'] },
+    'st-4': { photo: 'assets/book/st-twins.webp', pos: '50% 35%', items: ['👯'] },
+    'st-ref': { c: 'navy', lay: 'row', items: ['📘', '🧠', '🔤', '📝', '✨'] },
+    'u1-1': { photo: 'assets/book/u1-opener.webp', pos: '50% 60%', items: ['🏠'] },
+    'u1-2': { photo: 'assets/book/u1-glasshouse.webp', pos: '50% 60%', items: ['⏳'] },
+    'u1-3': { photo: 'assets/book/u1-house.webp', pos: '50% 50%', items: ['🏡'] },
+    'u1-4': { photo: 'assets/book/u1-yurt.webp', pos: '50% 50%', items: ['⛺'] },
+    'u1-5': { photo: 'assets/book/u1-cassette.webp', pos: '50% 50%', items: ['📼'] },
+    'u1-6': { photo: 'assets/book/u1-bedroom-girl.webp', pos: '50% 50%', items: ['🗣️'] },
+    'u1-7': { photo: 'assets/book/u1-houseboat.webp', pos: '50% 60%', items: ['⛵'] },
+    'u1-8': { photo: 'assets/book/u1-friends.webp', pos: '30% 50%', items: ['✍️'] },
+    'u1-ref': { c: 'navy', lay: 'row', items: ['📘', '🏠', '🔤', '📝', '🗣️'] }
   },
-
-  /* ---------- Слова, для которых картинка действительно передаёт значение ----------
-     Используются в режимах Picture Match и Scene Explorer. Значение — 3D-объект
-     (если отличается от v.emoji в словаре).                                     */
-  words: {
-    'phone call': '📞', 'online gaming': '🎮', 'fountain': '⛲', 'gym': '🏋️', 'leisure centre': '🏊',
-    'shopping centre': '🛍️', 'skatepark': '🛹', 'reporter': '🎙️', 'anniversary': '🎂', 'video chat': '🤳',
-    'cross your arms': '🙅', 'hug someone': '🤗', 'kiss someone': '😘', 'point at something': '👉',
-    'smile at someone': '😊', 'wave goodbye': '👋', 'muscle': '💪', 'angry': '😠', 'scared': '😨',
-    'disgusted': '🤢', 'hide': '🙈', 'disappointed': '😞', 'upset': '😢', 'exhausted': '😩',
-    'invitation': '💌', 'canteen': '🍛', 'bike messenger': '🚴', 'package': '📦', 'delivery': '🚚',
-    'helmet': '⛑️', 'traffic': '🚕', 'brain': '🧠', 'graduation': '🎓', 'archaeologist': '⛏️',
-    'rubbish': '🗑️', 'formal': '🤵', 'lark': '🐦', 'owl': '🦉', 'mindfulness': '🧘', 'placard': '🪧',
-    'vote': '🗳️', 'blogging': '💻', 'file sharing': '📂', 'engaged': '💍', 'do the washing-up': '🍽️',
-    'courgette': '🥒', 'peanut': '🥜', 'straw': '🥤', 'baking': '🧁', 'striped': '🦓', 'skyscraper': '🏙️',
-    'department store': '🏬', 'campsite': '⛺', 'woods': '🌳', 'rescue': '🚒', 'security guard': '💂',
-    'judge': '👩‍⚖️', 'trek': '🥾', 'cut down': '🪓', 'platform': '🚉', 'luggage': '🧳', 'essay': '📝',
-    'leaflet': '📄', 'funny': '🤣', 'telescope': '🔭', 'anxious': '😟', 'embarrassing': '😳',
-    'circadian rhythm': '🔄', 'lonely': '😔', 'loose': '👖', 'carer': '🧑‍⚕️', 'episode': '📺',
-    'raise money': '💰', 'calm': '😌', 'shy': '🙈', 'awesome': '🤘'
-  },
-
-  /* ---------- Иллюстрации к заданиям (вместо пометки «фото — в учебнике») ----------
-     k: 'board' — плитки с буквами/номерами (описания для доступности берутся из задания)
-        'pano'  — сцена из 3D-объектов
-        'duo'   — две сцены рядом (Figure A / Figure B, тогда / сейчас)
-        'svg'   — оригинальный рисунок из js/visual-svg.js
-        'heart' — сердце из мусора (генерируется)
-        'reveal'— список, который ученик открывает сам                                  */
-  items: {
-    'u15-1': { k: 'pano', c: 'orange', items: ['🚴'], photo: 'bike-messenger', credit: 'Javier de la Maza', palt: 'Велокурьер в шлеме и оранжевом жилете едет по улице Нью-Йорка, рядом жёлтое такси.' },
-    /* Unit 1 */
-    'u1o-1': { photo: 'bee', credit: 'Ronin', palt: 'Медоносная пчела на оранжевом цветке газании.', k: 'pano', c: 'orange', lay: 'macro', items: ['🌼', '🐝', '🐝', '🦋', '🌿'], alt: 'Пчёлы собирают нектар на крупном оранжевом цветке.' },
-    'u12-2': { k: 'board', mark: 'abc', cols: 6, tiles: [['😘', '🎉'], ['👴', '👋'], ['🙅‍♀️', '😒'], ['👭', '🤗'], ['😲', '👉'], ['😊', '☕']],
-      alts: ['A — женщина и мужчина на вечеринке', 'B — пожилой мужчина у окна', 'C — молодая женщина, недовольное лицо', 'D — две счастливые девушки', 'E — удивлённый молодой человек', 'F — женщина и мужчина за столом'] },
-    /* Unit 2 */
-    'u2o-1': { k: 'svg', draw: 'grasshopperClock', alt: 'Металлический кузнечик сидит на большом золотом циферблате.' },
-    'u22-1': { k: 'board', mark: '123', cols: 4, tiles: [{ svg: 'pillars' }, { svg: 'army' }, { svg: 'stone' }, { svg: 'mountainCity' }] },
-    'u24-1': { k: 'pano', c: 'blue', lay: 'duo', items: ['🧍‍♂️', '🧍‍♀️', '📚', '💬'], alt: 'Двое школьников в форме разговаривают в библиотеке.' },
-    /* Unit 3 */
-    'u3o-1': { k: 'heart', alt: 'Сердце, выложенное на песке из мусора с пляжа: бутылки, стаканчики, крышки.' },
-    'u33-1': { k: 'svg', draw: 'poster', alt: 'Самодельный плакат на акции: «MAKE THE EARTH COOL AGAIN», Земля и тающий лёд.' },
-
-    /* Entry Book */
-    'e1-1-1': { k: 'duo', panels: [{ label: 'Figure A', c: 'blue', items: ['🧠', '📊', '🧮'] }, { label: 'Figure B', c: 'pink', items: ['💖', '🫂', '🎈'] }], alt: 'Figure A: мозг, график, счёты. Figure B: сердце, объятие, воздушный шар.' },
-    'e1-1-4': { k: 'board', mark: '123', cols: 4, tiles: [['🧘‍♀️'], ['🪙', '⚖️'], ['👩‍🎓', '📐'], ['📢'], ['🫂'], ['🫶'], ['🙈'], ['🎈', '🎁']] },
-    'e1-4-8': { k: 'svg', draw: 'boys', alt: 'Четыре мальчика: 1 — короткие прямые светлые волосы, светлая кожа; 2 — короткие кудрявые тёмные волосы, тёмная кожа; 3 — длинные прямые светлые волосы, светлая кожа; 4 — волнистые каштановые волосы средней длины, светлая кожа.' },
-    'e2-5-2': { k: 'board', mark: 'abc', cols: 4, tiles: [['📱', '👧'], ['💻', '📝'], ['💻', '🖼️'], ['📱', '💬'], ['🚶‍♂️', '📞'], ['📁', '➡️'], ['📱', '👟'], ['📱', '😂']] },
-    'e2-7-2': { k: 'pano', c: 'green', lay: 2, items: ['👨‍👩‍👧‍👦', '🏠', '🐕', '📊'], alt: 'Иллюстрация к тексту о семьях в Великобритании: семья, дом, собака, диаграмма.' },
-    'e2-8-7': { k: 'pano', c: 'pink', lay: 'row', items: ['👵', '👴', '👩', '👨', '👧', '👦', '👶'], alt: 'Большая современная семья: бабушка, дедушка, взрослые и дети.' },
-    'e3-9-1': { photo: 'bedroom', credit: 'Willian Reis', palt: 'Светлая комната с большими окнами, кроватью и гирляндой.', k: 'pano', c: 'yellow', lay: 'room', items: ['🛏️', '🪟', '🪴', '💡', '📚'], alt: 'Светлая комната в студенческом доме: кровать, окно, растение, лампа, книги.' },
-    'e3-9-2': { k: 'svg', draw: 'house', alt: 'Дом в разрезе, комнаты отмечены номерами 1–12: от подвала до чердака.' },
-    'e3-10-10': { k: 'board', mark: 'abc', cols: 5, tiles: [['👕'], ['🗑️'], ['🧹'], ['🍽️', '🧽'], ['🛒', '🥦'], ['🧸', '🧦'], ['🧼', '🚿'], ['🛏️'], ['🍳']] },
-    'e3-11-2': { photo: 'tai-o', credit: 'Joshua J. Cotten', palt: 'Дома на сваях и лодки у воды, деревня Тай-О в Гонконге.', k: 'svg', draw: 'hongKong', alt: 'Гонконг: высокие жилые башни у воды и плавучие дома-лодки.' },
-    'e3-11-4': { k: 'svg', draw: 'livingKitchen', alt: 'Гостиная и кухня, предметы отмечены номерами 1–9.' },
-    'e4-13-2': { k: 'pano', c: 'orange', lay: 3, items: ['🌶️', '🍔', '🍰', '🍣', '🥗'], alt: 'Необычная еда: острый перец, огромный бургер, торт, суши, салат.' },
-    'e4-13-4': { k: 'board', mark: 'abc', cols: 5, tiles: [['🥩'], ['🥓'], ['🍗'], ['🌭'], { svg: 'sugar' }, { svg: 'oil' }, ['🍄'], ['🫑'], ['🧅'], ['🥒'], ['🥚'], { svg: 'grapes' }, ['🍓'], ['🥜'], { svg: 'crisps' }] },
-    'e4-15-4': { k: 'board', mark: '123', cols: 4, tiles: [{ svg: 'fork' }, { svg: 'cup' }, { svg: 'plate' }, { svg: 'spoon' }, { svg: 'bowl' }, { svg: 'knife' }, { svg: 'glass' }, { svg: 'straw' }] },
-    'e4-16-8': { k: 'svg', draw: 'mountainPath', alt: 'Узкая горная тропа над глубоким ущельем, по ней идут дети с рюкзаками.' },
-    'e5-17-5': { k: 'pano', c: 'blue', lay: 'row', items: ['📱', '🍞', '⛺', '🎸', '👗'], alt: 'Чем заняты подростки: видео на телефоне, выпечка, поход, концерт, одежда.' },
-    'e5-19-1': { k: 'svg', draw: 'clothes', alt: 'Двенадцать предметов одежды, отмеченных номерами 1–12, с разными узорами и тканями.' },
-    'e5-20-8': { k: 'duo', panels: [{ label: 'Toni, 16', c: 'yellow', items: ['👭', '👕', '👖'] }, { label: 'Jeremy, 18', c: 'blue', items: ['🎩', '👔', '📷'] }], alt: 'Toni с подругами в одинаковой одежде; Jeremy примеряет рубашку, шляпу и фотоаппарат из благотворительного магазина.' },
-    'e6-21-1': { k: 'board', mark: 'abc', cols: 5, tiles: [['✂️', '💈'], ['🏭'], ['🛫'], ['🏬', '🛍️'], ['🏛️'], ['🏰'], ['📖'], ['🏙️', '🌴'], ['🍞'], ['👟']] },
-    'e6-21-4': { photo: 'tyne', credit: 'Ian Ward', palt: 'Ньюкасл: арочный мост Тайн-бридж над рекой, за ним другие мосты.', k: 'svg', draw: 'newcastle', alt: 'Город на реке с несколькими арочными мостами — Ньюкасл.' },
-    'e6-22-7': { k: 'reveal', title: 'Matilda’s list: Move to the countryside?', rows: [['🏫', 'my school', 0], ['🛏️', 'a new bedroom', 1], ['🤝', 'new people', 1], ['👭', 'friends every day', 0], ['🥐', 'my favourite bakery', 0], ['🏄', 'water sports', 1]],
-      alt: 'Список Матильды с рисунками: школа, новая спальня, новые люди, друзья, пекарня, водный спорт.' },
-    'e6-23-2': { k: 'pano', c: 'green', lay: 2, items: ['⛺', '🐎', '🔥', '🌲'], alt: 'Палатка в поле, рядом лошадь, костёр и деревья.' },
-    'e6-23-4': { k: 'svg', draw: 'campsite', alt: 'Рисунок Теда: кемпинг и всё вокруг, отмечено номерами 1–7.' },
-    'e7-25-2': { photo: 'photographer', credit: 'Brooke Cagle', palt: 'Девушка-фотограф с фотоаппаратом на фоне гор.', k: 'pano', c: 'pink', lay: 1, items: ['📷', '🌄', '👩', '💜'], alt: 'Фотоаппарат, горный пейзаж на рассвете и девушка-фотограф.' },
-    'e7-27-1': { k: 'svg', draw: 'ukMap', alt: 'Карта Великобритании: маршрут от Land’s End на юго-западе Англии до John O’Groats на севере Шотландии, 874 мили.' },
-    'e8-29-1': { k: 'pano', c: 'green', lay: 3, items: ['🏹', '🌳', '🏰', '🎯'], alt: 'Шервудский лес и лук со стрелами — образ Робин Гуда.' },
-    'e8-29-2': { k: 'board', mark: '123', cols: 5, tiles: [['🤲', '🪙'], ['🤴', '💰'], ['😩', '🪵'], ['🗡️', '🐉'], ['💪', '🛒'], ['🤴', '😠'], ['🧓', '🤝'], ['😋', '🍗'], ['🥣', '🧒']] },
-    'e8-31-1': { photo: 'redwoods', credit: 'Dan Meyers', palt: 'Тропа среди гигантских секвой высотой около 90 метров.', k: 'svg', draw: 'tallForest', alt: 'Очень высокие деревья, у их подножия крошечная фигурка человека.' },
-    'e9-33-1': { k: 'pano', c: 'blue', lay: 'row', items: ['🔬', '🧪', '💡', '🧬', '🚀'], alt: 'Достижения науки: микроскоп, пробирка, лампочка, ДНК, ракета.' },
-    'e9-34-7': { photo: 'rocket', credit: 'SpaceX', palt: 'Запуск ракеты: дым и пламя над стартовой площадкой.', k: 'svg', draw: 'spaceship', alt: 'Космический корабль летит к Луне среди звёзд.' },
-    'e9-35-6': { photo: 'beach-bottle', credit: 'Brian Yurasits', palt: 'Пластиковая бутылка на песке у моря.', k: 'svg', draw: 'beachBottles', alt: 'Пластиковые бутылки на берегу моря.' },
-    'e9-36-7': { k: 'board', mark: '123', cols: 4, tiles: [['🧑‍⚕️', '👵'], ['🛎️', '🔑'], ['✍️', '📚'], ['💂', '🏪'], ['👩‍💼', '🗂️'], ['🧑‍💻', '🚗'], ['🧑‍💼', '🏪'], ['🧑‍🏭', '✈️']] },
-    'e10-37-1': { k: 'duo', panels: [{ label: '1908', c: 'sepia', items: ['🏃', '⏱️', '🥾'] }, { label: '2019', c: 'blue', items: ['🏃', '⏱️', '👟'] }], alt: '1908 — бегун-марафонец в старой обуви; 2019 — современный бегун в беговых кроссовках.' },
-    'e11-41-2': { photo: 'florence', credit: 'Pedro de Sousa', palt: 'Купол собора Санта-Мария-дель-Фьоре над крышами Флоренции.', k: 'svg', draw: 'florence', alt: 'Флоренция: собор с большим куполом, колокольня и флажки.' },
-    'e11-43-1': { photo: 'salkantay', credit: 'Tannia Aviles', palt: 'Заснеженная гора Салкантай и зелёная долина в Андах.', k: 'svg', draw: 'andes', alt: 'Турист с рюкзаком на тропе в Андах, рядом лама.' },
-    'e11-44-6': { k: 'board', mark: 'abc', cols: 6, tiles: [['🤡'], ['🎗️', '🖊️'], ['📓', '✍️'], ['🪙', '🫙'], ['👕', '🍲'], ['🧑', '🥫']] },
-    'e12-45-1': { k: 'pano', c: 'orange', lay: 'row', items: ['🌍', '🏙️', '👨‍👩‍👧‍👦', '🌾', '🐾'], alt: 'Население планеты: Земля, города, семьи, поля, дикая природа.' },
-    'e12-46-8': { photo: 'wood-thrush', credit: 'J. J. Audubon / Boston Public Library', palt: 'Лесной дрозд: два дрозда на ветке кизила, иллюстрация Одюбона.', k: 'pano', c: 'green', lay: 1, items: ['🐦', '🌳', '🪓', '🏗️'], alt: 'Певчая птица на дереве, рядом вырубка леса и стройка.' },
-    'e12-47-6': { k: 'board', mark: '123', cols: 6, tiles: [{ svg: 'seatbelt' }, ['🧍', '🎒'], ['🚉'], ['🚢', '⚓'], { svg: 'board' }, ['🧳', '🛒']] }
-  },
-
-  /* ---------- Схемы времён в Grammar Reference ---------- */
-  grammar: {
-    'u1gr-ref1': 'psPc',
-    'u2gr-ref1': 'pastPc',
-    'u2gr-ref2': 'usedTo',
-    'u3gr-ref1': 'ppForSince',
-    'u3gr-ref2': 'ppPast'
-  }
+  sections: { book: '📘', vocab: '📚', train: '🏋️', review: '🏁', ref: '📖', refv: '🔤', refw: '📝', voc2: '🔤', voc3: '🔗', gram1: '⚙️', gram2: '⚙️', phr: '🧩', wp: '🧩', task: '✍️' },
+  items: {},
+  words: {}
 };
