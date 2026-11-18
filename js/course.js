@@ -1,13 +1,13 @@
 /* =========================================================
    OPTIMISE STARS B1 · структура всего курса
    Источник: Student’s Book, Contents pp. 4–5.
-   ready: true  — раздел полностью перенесён на сайт;
+   ready: true  — раздел открывается на сайте; полнота медиа учитывается отдельно;
    soon:  true  — раздел есть в учебнике, на сайте появится позже (уроков и заданий нет).
    Чтобы добавить Unit N: создайте js/data-unitN.js (по образцу data-unit1.js),
    впишите id уроков в lessons, поставьте ready: true и уберите soon.
    ========================================================= */
 window.BOOK = {
-  title: 'Optimise Stars B1',
+  title: 'Optimise B1',
   subtitle: 'Interactive English Studio',
   level: 'B1',
   units: [
@@ -44,3 +44,7 @@ window.BOOK = {
 };
 window.LESSONS = {};
 window.VOCAB = [];
+
+// Preserve future syllabus metadata outside the seven-section menu.
+BOOK.futureUnits = BOOK.units.slice(7);
+BOOK.units = BOOK.units.slice(0, 7);

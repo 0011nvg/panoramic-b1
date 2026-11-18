@@ -203,7 +203,7 @@
     async request() { if (!this.unlocked() && !(await this.ask())) return false; return true; }
   };
   /* Режим включается только после ввода кода в этой вкладке; при закрытии вкладки — выключается */
-  const Tutor = { on() { return !!LS.get('tutor', false) && TutorLock.unlocked(); }, set(v) { v = !!v && TutorLock.unlocked(); LS.set('tutor', v); document.documentElement.classList.toggle('tutor', v); } };
+  const Tutor = { on() { return !!LS.get('tutor', false) && TutorLock.unlocked(); }, set(v) { v = !!v && TutorLock.unlocked(); LS.set('tutor', v); document.documentElement.classList.toggle('tutor', v); document.dispatchEvent(new CustomEvent('tutor-mode-changed', { detail: { on: v } })); } };
 
   /* ---------- Content index ---------- */
   function allItems(lessonId) { const L = LESSONS[lessonId]; const out = []; L.sections.forEach(s => s.items.forEach(it => out.push(Object.assign({ _section: s.id }, it)))); return out; }

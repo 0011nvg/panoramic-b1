@@ -75,12 +75,12 @@
 
   /* ---------- vocabulary events ---------- */
   document.addEventListener('vocab-graded', e => {
-    const { w, ok, kind, before, after } = e.detail; if (!ok) { markDay(); Store.save(); return; }
+    const { w, key, ok, kind, before, after } = e.detail; if (!ok) { markDay(); Store.save(); return; }
     let xp = 0;
     if (kind === 'recall' && after > before) xp += 2 + after;           // вспомнил по памяти и слово «повзрослело»
     else if (kind === 'recall') xp += 1;
     else if (before === 0 && after === 1) xp += 1;                      // первое узнавание
-    if (after >= SRS_MASTER && before < SRS_MASTER) { xp += 5; emit('word-mastered', { w }); }
+    if (after >= SRS_MASTER && before < SRS_MASTER) { xp += 5; emit('word-mastered', { w, key }); }
     if (xp) addXP(xp, 'Word: ' + w); else { markDay(); Store.save(); }
   });
   const SRS_MASTER = Vocab.MASTER_BOX;
@@ -108,7 +108,7 @@
     out.push({ id: 'core', icon: '🧭', title: 'Lesson route', desc: 'Выполни все задания урока', cur: core.filter(it => ex[it.id] && ex[it.id].done).length, goal: core.length, xp: 25 });
     if (graded.length) { const goal = Math.min(3, graded.length); out.push({ id: 'stars', icon: '⭐', title: 'Sharp eye', desc: 'Получи ★★★ (100 %) в ' + goal + ' заданиях с проверкой — можно после Try Again', cur: Math.min(goal, graded.filter(it => stars(it.id) === 3).length), goal, xp: 20 }); }
     else { const talk = items.filter(it => ['discuss', 'interview', 'writing'].includes(it.type)); if (talk.length) out.push({ id: 'talk', icon: '🗣', title: 'Speak up', desc: 'Выполни все задания на говорение и письмо', cur: talk.filter(it => ex[it.id] && ex[it.id].done).length, goal: talk.length, xp: 20 }); }
-    if (words.length) { const goal = Math.min(6, words.length); out.push({ id: 'words', icon: '🧠', title: 'Word keeper', desc: 'Вспомни по памяти ' + goal + ' слов урока (Learn with Keks, Type, Context)', cur: Math.min(goal, words.filter(v => SRS.st(v.w).box >= 2).length), goal, xp: 20 }); }
+    if (words.length) { const goal = Math.min(6, words.length); out.push({ id: 'words', icon: '🧠', title: 'Word keeper', desc: 'Вспомни по памяти ' + goal + ' слов урока (Learn with Keks, Type, Context)', cur: Math.min(goal, words.filter(v => SRS.st(v).box >= 2).length), goal, xp: 20 }); }
     else if (graded.length) { out.push({ id: 'polish', icon: '🛠', title: 'Polish', desc: 'Доведи все задания с проверкой минимум до ★★ (80 %)', cur: graded.filter(it => stars(it.id) >= 2).length, goal: graded.length, xp: 20 }); }
     const g = G();
     out.forEach(m => { m.key = lessonId + ':' + m.id; m.done = m.cur >= m.goal && m.goal > 0; m.claimed = !!g.missions[m.key]; });

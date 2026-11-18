@@ -25,3 +25,10 @@ window.VISUALS = {
   items: {},
   words: {}
 };
+
+// Keep each added unit visually connected to its Student's Book photos.
+VISUALS.units.u3={photo:'assets/book/u3-header.webp',pos:'50% 50%',tag:'Time out'};
+VISUALS.units.u4={photo:'assets/book/u4-header.webp',pos:'50% 50%',tag:'Healthy living'};
+for(const [unit,hero,other,emoji] of [['u3','u3-header.webp','u3-free-time.webp','🎯'],['u4','u4-header.webp','u4-first-aid.webp','🩹']]){
+ for(const id of BOOK.units.find(u=>u.id===unit).lessons){VISUALS.lessons[id]={photo:'assets/book/'+(/vocabulary|grammar/.test(id)?other:hero),pos:'50% 50%',items:[emoji]};}
+}

@@ -1,114 +1,137 @@
-/* Автопроверка платформы в Chrome (Playwright).
-   node tests/qa.js http://localhost:8765/ [папка-для-скриншотов]
-   Проверяет на 375 / 820 / 1366 px: каждый урок открывается без ошибок в консоли, нет горизонтальной прокрутки,
-   все картинки загружаются, учительские элементы скрыты в режиме ученика; в режиме учителя каждое задание
-   с ключом после «Ключ (учитель)» → «Check Answers» даёт 100 %; аудиофайлы отдаются (200); прогресс сохраняется. */
+/* GitHub Actions browser regression suite.
+   node tests/qa.js http://localhost:8765/ [optional-screenshot-directory]
+   Root's live visual review uses the supported browser tool separately. */
 const { chromium } = require('playwright');
 const fs = require('fs');
-const BASE = process.argv[2] || 'http://localhost:8765/';
+const BASE = (process.argv[2] || 'http://localhost:8765/').replace(/\/?$/, '/');
 const SHOTS = process.argv[3] || null;
-let pass = 0, fail = 0; const fails = [];
-const ok = (c, msg) => { if (c) pass++; else { fail++; fails.push(msg); console.log('FAIL ' + msg); } };
-
-(async () => {
-  const browser = await chromium.launch();
-  if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
-  const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
-  const page = await ctx.newPage();
-  const errors = [];
-  page.on('pageerror', e => errors.push('pageerror: ' + e.message));
-  page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
-  page.on('response', r => { if (r.status() >= 400) errors.push('HTTP ' + r.status() + ' ' + r.url()); });
-  await page.goto(BASE); await page.waitForTimeout(500);
-  const info = await page.evaluate(() => ({
-    lessons: BOOK.units.filter(u => u.ready).flatMap(u => u.lessons),
-    units: BOOK.units.length, soon: BOOK.units.filter(u => u.soon).map(u => u.id),
-    audio: [...new Set(Object.values(LESSONS).flatMap(L => L.sections.flatMap(s => s.items.filter(i => i.audio && i.audio.file).map(i => i.audio.file))))]
+let pass = 0, fail = 0;
+const failures = [];
+function ok(condition,message){if(condition)pass++;else{fail++;failures.push(message);console.error('FAIL '+message);}}
+(async()=>{
+  const browser=await chromium.launch();
+  const context=await browser.newContext({viewport:{width:1366,height:900},reducedMotion:'reduce'});
+  const page=await context.newPage();
+  const errors=[];
+  page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+  page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+  page.on('response',r=>{if(r.status()>=400)errors.push('HTTP '+r.status()+' '+r.url());});
+  if(SHOTS)fs.mkdirSync(SHOTS,{recursive:true});
+  await page.goto(BASE);
+  await page.waitForSelector('.cmap');
+  const info=await page.evaluate(()=>({
+    units:BOOK.units.map(u=>u.id),lessons:BOOK.units.flatMap(u=>u.lessons),
+    audio:[...new Set(Object.values(LESSONS).flatMap(l=>l.sections.flatMap(s=>s.items.filter(i=>i.audio?.file).map(i=>i.audio.file))))]
   }));
-  ok(info.units >= 11, 'course map lists Starter + 10 units (+ reviews)');
-  ok(['u3', 'u4', 'u5', 'u6', 'u7', 'u8', 'u9', 'u10'].every(u => info.soon.includes(u)), 'Units 3–10 are marked soon');
-  const soonCards = await page.$$eval('.cm.soon', els => els.length);
-  ok(soonCards >= 8, 'home shows “Скоро” cards: ' + soonCards);
-  const soonLinks = await page.$$eval('.cm.soon a', els => els.length);
-  ok(soonLinks === 0, 'soon units are not links');
-
-  /* audio files */
-  for (const f of info.audio) {
-    const r = await page.request.get(BASE + f);
-    ok(r.status() === 200 && (await r.body()).length > 50000, 'audio ' + f + ' → ' + r.status());
+  ok(JSON.stringify(info.units)===JSON.stringify(['st','u1','u2','r12','u3','u4','r34']),'seven sections in book order');
+  ok(await page.locator('.cm').count()===7,'menu contains exactly seven sections');
+  ok(await page.locator('.cm.soon').count()===0,'all seven course sections can open');
+  ok((await page.title()).startsWith('Optimise B1'),'published project title');
+  ok(!errors.length,'entry loads without console or HTTP errors: '+errors.join(' | '));
+  for(const file of info.audio){
+    const response=await page.request.get(BASE+file);
+    ok(response.status()===200&&(await response.body()).length>50000,'audio response '+file);
+    const duration=await page.evaluate(file=>new Promise(resolve=>{
+      const audio=new Audio();const timeout=setTimeout(()=>finish(0),10000);
+      function finish(value){clearTimeout(timeout);audio.removeAttribute('src');audio.load();resolve(value);}
+      audio.onloadedmetadata=()=>finish(audio.duration);audio.onerror=()=>finish(0);audio.src=file;
+    }),file);
+    ok(Number.isFinite(duration)&&duration>1,'audio decodes '+file);
   }
-
-  /* every lesson, three widths, student mode */
-  for (const w of [375, 820, 1366]) {
-    await page.setViewportSize({ width: w, height: 900 });
-    for (const id of info.lessons) {
-      errors.length = 0;
-      await page.goto(BASE + '#/lesson/' + id); await page.waitForTimeout(250);
-      await page.evaluate(() => document.querySelectorAll('img[loading=lazy]').forEach(i => { i.loading = 'eager'; }));
-      await page.waitForTimeout(350);
-      const r = await page.evaluate(() => {
-        const sw = document.documentElement.scrollWidth, iw = window.innerWidth;
-        const imgs = [...document.querySelectorAll('main img')].filter(i => !i.closest('[hidden]'));
-        const broken = imgs.filter(i => i.complete && i.naturalWidth === 0).map(i => i.getAttribute('src'));
-        const vis = el => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
-        const tutorVisible = [...document.querySelectorAll('.tutor-only, .model-ans, .keysrc, .tnote')].filter(vis).length;
-        const wide = [...document.querySelectorAll('main *')].filter(el => { const b = el.getBoundingClientRect(); return b.right > iw + 2 && vis(el) && !el.closest('.wtable-wrap,.gridx-wrap,.lnav-in,.lnav'); }).slice(0, 3).map(el => el.tagName + '.' + el.className);
-        return { sw, iw, broken, tutorVisible, wide, cards: document.querySelectorAll('.ex').length };
-      });
-      ok(r.cards > 0, `${id}@${w}: has exercises (${r.cards})`);
-      ok(r.sw <= r.iw + 1, `${id}@${w}: no horizontal scroll (${r.sw} > ${r.iw}) ${r.wide.join(' ')}`);
-      ok(!r.broken.length, `${id}@${w}: images load ${r.broken.join(', ')}`);
-      ok(r.tutorVisible === 0, `${id}@${w}: teacher-only content hidden in student mode (${r.tutorVisible})`);
-      ok(!errors.length, `${id}@${w}: no console errors ${errors.join(' | ')}`);
-      if (SHOTS && w !== 820) await page.screenshot({ path: `${SHOTS}/${id}-${w}.png`, fullPage: false });
+  ok(info.audio.length===19,'all supplied audio tracks are exercised');
+  const visibleCheck=()=>{
+    const visible=el=>{const rect=el.getBoundingClientRect(),style=getComputedStyle(el);return !!(rect.width&&rect.height)&&style.display!=='none'&&style.visibility!=='hidden'&&!el.closest('[hidden]');};
+    const broken=[...document.querySelectorAll('main img')].filter(visible).filter(img=>!img.complete||!img.naturalWidth).map(img=>img.getAttribute('src'));
+    return {width:innerWidth,scroll:document.documentElement.scrollWidth,broken,cards:document.querySelectorAll('.ex').length,teacher:[...document.querySelectorAll('.tutor-only,.model-ans,.keysrc,.tnote,.teacher-answers')].filter(visible).length};
+  };
+  for(const width of [375,820,1366]){
+    await page.setViewportSize({width,height:900});
+    for(const id of info.lessons){
+      errors.length=0;
+      await page.goto(BASE+'#/lesson/'+id);
+      await page.waitForSelector('.ex');
+      await page.evaluate(()=>document.querySelectorAll('main img').forEach(img=>img.loading='eager'));
+      await page.waitForFunction(()=>[...document.querySelectorAll('main img')].every(img=>img.complete),null,{timeout:15000});
+      const result=await page.evaluate(visibleCheck);
+      ok(result.cards>0,id+'@'+width+' renders exercises');
+      ok(result.scroll<=width+1,id+'@'+width+' no horizontal scroll ('+result.scroll+')');
+      ok(!result.broken.length,id+'@'+width+' images load '+result.broken.join(', '));
+      ok(result.teacher===0,id+'@'+width+' teacher material hidden');
+      ok(!errors.length,id+'@'+width+' no console/HTTP errors '+errors.join(' | '));
+      if(SHOTS&&width!==820)await page.screenshot({path:SHOTS+'/'+id+'-'+width+'.png',fullPage:false});
     }
   }
-
-  /* student: answers are not shown before an attempt */
-  await page.setViewportSize({ width: 1366, height: 900 });
-  await page.goto(BASE + '#/lesson/u1-2'); await page.waitForTimeout(300);
-  const rev = await page.$$eval('.ex .reveal', b => b.filter(x => !x.hidden).length);
-  ok(rev === 0, 'student: “Show answers” hidden before the first check');
-  await page.click('#ex-u12-1 .btn.primary'); await page.waitForTimeout(150);
-  ok(await page.$eval('#ex-u12-1 .reveal', b => !b.hidden), 'student: “Show answers” appears after a check with mistakes');
-
-  /* teacher: every keyed exercise gives 100 % */
-  await page.evaluate(() => { sessionStorage.setItem('tutorUnlock', '1'); Core.Tutor.set(true); });
-  for (const id of info.lessons) {
-    errors.length = 0;
-    await page.goto(BASE + '#/lesson/' + id); await page.waitForTimeout(250);
-    const res = await page.evaluate(async () => {
-      const out = [];
-      for (const card of document.querySelectorAll('.ex')) {
-        const btns = [...card.querySelectorAll('.ex-tools button')];
-        const key = btns.find(b => b.textContent.includes('Ключ (учитель)'));
-        const check = btns.find(b => b.textContent === 'Check Answers');
-        if (!key || !check) continue;
-        const reset = btns.find(b => b.textContent === 'Reset Exercise');
-        key.click(); check.click();
-        const pct = (card.querySelector('.ex-fb .pct') || {}).textContent;
-        out.push([card.dataset.id, pct]);
+  // A real student attempt, retry, hint, keyboard choice, and persistence.
+  await page.setViewportSize({width:1366,height:900});
+  await page.goto(BASE+'#/lesson/u1-2');
+  const exercise=page.locator('#ex-u12-1');
+  ok(!(await exercise.locator('.reveal').isVisible()),'student reveal hidden before attempting');
+  await exercise.getByRole('button',{name:'Check Answers',exact:true}).click();
+  ok(await exercise.locator('.reveal').isVisible(),'student reveal available after an attempt');
+  await exercise.getByRole('button',{name:'Need a Hint?',exact:true}).click();
+  ok(await exercise.locator('.ex-hint').isVisible(),'hint opens');
+  await exercise.getByRole('button',{name:'Try Again',exact:true}).click();
+  const expected=await page.evaluate(()=>LESSONS['u1-2'].sections[0].items.find(i=>i.id==='u12-1').lines.flat().filter(s=>typeof s==='object').map(s=>[].concat(s.a)[0]));
+  const groups=exercise.locator('.ich');
+  for(let i=0;i<expected.length;i++){const button=groups.nth(i).locator('.ich-o').nth(expected[i]);await button.focus();await button.press('Enter');}
+  await exercise.getByRole('button',{name:'Check Answers',exact:true}).click();
+  ok((await exercise.locator('.ex-fb .pct').textContent())==='100%','correct keyboard choices score 100%');
+  await page.waitForTimeout(350);
+  const before=await page.evaluate(()=>JSON.stringify(Core.Store.data().ex['u12-1']));
+  await page.reload();await page.waitForSelector('#ex-u12-1');
+  ok((await page.evaluate(()=>JSON.stringify(Core.Store.data().ex['u12-1'])))===before,'student progress survives reload');
+  await page.locator('#ex-u12-1').getByRole('button',{name:'Reset Exercise',exact:true}).click();
+  await page.getByRole('dialog').getByRole('button',{name:'Сбросить',exact:true}).click();
+  ok(await page.locator('#ex-u12-1 .ich-o[aria-checked=true]').count()===0,'exercise reset clears selected choices');
+  // Teacher panels must reveal their own content without filling or scoring student work.
+  await page.evaluate(()=>{sessionStorage.setItem('tutorUnlock','1');Core.Tutor.set(true);});
+  for(const id of info.lessons){
+    errors.length=0;await page.goto(BASE+'#/lesson/'+id);await page.waitForSelector('.ex');
+    const results=await page.evaluate(()=>{
+      const serialize=()=>JSON.stringify({fields:[...document.querySelectorAll('.ex input,.ex select,.ex textarea')].map(el=>({value:el.value,checked:el.checked})),chosen:[...document.querySelectorAll('.ex [aria-checked],.ex [aria-pressed]')].filter(el=>!el.classList.contains('teacher-answer-toggle')).map(el=>[el.getAttribute('aria-checked'),el.getAttribute('aria-pressed')]),store:Core.Store.data()});
+      const before=serialize(),out=[];
+      for(const button of document.querySelectorAll('.teacher-answer-toggle')){
+        const card=button.closest('.ex'),panel=card.querySelector('.teacher-answers');
+        const empty=panel.hidden&&!panel.childNodes.length;
+        button.focus(); // Actual keyboard/user focus must also leave student progress unchanged.
+        button.click();
+        const shown=!panel.hidden&&!!panel.textContent.trim()&&button.getAttribute('aria-expanded')==='true';
+        const noInputs=!panel.querySelector('input,select,textarea');
+        button.click();
+        const hidden=panel.hidden&&!panel.childNodes.length&&button.getAttribute('aria-expanded')==='false';
+        out.push({id:card.dataset.id,empty,shown,hidden,noInputs});
       }
-      return out;
+      return {out,unchanged:before===serialize()};
     });
-    res.forEach(([ex, pct]) => ok(pct === '100%', `teacher key ${ex} → ${pct}`));
-    const seen = await page.$$eval('.keysrc', els => els.filter(e => e.getBoundingClientRect().height > 0).length);
-    if (!/-ref$/.test(id)) ok(seen > 0, `${id}: key provenance labels visible in teacher mode (${seen})`);
-    ok(!errors.length, `${id} (teacher): no console errors ${errors.join(' | ')}`);
+    for(const result of results.out)ok(result.empty&&result.shown&&result.hidden&&result.noInputs,'teacher panel show/hide '+result.id);
+    ok(results.unchanged,id+' teacher reveal preserves student fields and Store');
+    const contract=await page.evaluate(()=>{
+      const toggle=document.querySelector('.teacher-answer-toggle');if(toggle)toggle.click();
+      const before=JSON.stringify(Core.Store.data());Core.Tutor.set(false);
+      const clean=[...document.querySelectorAll('.teacher-answers')].every(p=>p.hidden&&!p.childNodes.length);
+      const closed=[...document.querySelectorAll('details.tutor-only')].every(d=>!d.open);
+      const unchanged=before===JSON.stringify(Core.Store.data());Core.Tutor.set(true);
+      return clean&&closed&&unchanged;
+    });
+    ok(contract,id+' Student Mode clears teacher panels without changing progress');
+    ok(!errors.length,id+' teacher mode no console/HTTP errors '+errors.join(' | '));
   }
-
-  /* progress persists after reload */
-  const before = await page.evaluate(() => Object.values(Core.Store.data().ex).filter(e => e.attempts && e.attempts.length).length);
-  await page.reload(); await page.waitForTimeout(300);
-  const after = await page.evaluate(() => Object.values(Core.Store.data().ex).filter(e => e.attempts && e.attempts.length).length);
-  ok(before > 0 && before === after, `progress saved in localStorage (${before} → ${after})`);
-
-  /* other pages */
-  for (const r of ['#/', '#/vocab', '#/vocab/u1-3/flash', '#/revision', '#/progress', '#/tutor', '#/coverage']) {
-    errors.length = 0; await page.goto(BASE + r); await page.waitForTimeout(400);
-    ok(!errors.length, `page ${r}: no console errors ${errors.join(' | ')}`);
+  await page.evaluate(()=>Core.Tutor.set(false));
+  for(const route of ['#/','#/vocab','#/vocab/u3/flash','#/vocab/u4/match','#/revision','#/progress','#/coverage']){
+    errors.length=0;await page.goto(BASE+route);await page.waitForTimeout(100);
+    ok(!errors.length,'route '+route+' loads '+errors.join(' | '));
   }
+  // Mandatory media are honest placeholders; no score controls or reward completion.
+  const missing=await page.evaluate(()=>Object.values(LESSONS).flatMap(l=>l.sections.flatMap(s=>s.items.filter(i=>i.mediaRequired).map(i=>({lesson:l.id,id:i.id})))));
+  for(const item of missing){await page.goto(BASE+'#/lesson/'+item.lesson);const card=page.locator('#ex-'+item.id);ok(await card.count()===1,'missing-media original exercise remains '+item.id);ok(await card.getByRole('button',{name:'Check Answers',exact:true}).count()===0,'missing-media task cannot be auto-scored '+item.id);ok(await card.getByRole('button',{name:'Mark as done',exact:true}).count()===0,'missing-media task cannot earn completion '+item.id);}
+  // Global reset clears the active student, teacher session, answers and game state.
+  await page.goto(BASE+'#/progress');
+  await page.getByRole('button',{name:'New Student / Reset All',exact:true}).first().click();
+  await page.getByRole('dialog').getByRole('button',{name:'Удалить всё',exact:true}).click();
+  await page.waitForURL(BASE+'#/');await page.waitForSelector('.cmap');
+  const reset=await page.evaluate(()=>{const data=Core.Store.data();return Object.values(data.ex).every(e=>!e.done&&!e.attempts.length&&e.state==null)&&Object.keys(data.vocab).length===0&&!data.last&&!Core.Tutor.on()&&!sessionStorage.getItem('tutorUnlock');});
+  ok(reset,'New Student clears active answers, progress, vocabulary, game state and teacher session');
   await browser.close();
-  console.log(`\n${pass} passed, ${fail} failed`);
-  if (fail) { console.log(fails.slice(0, 40).join('\n')); process.exit(1); }
-})();
+  console.log(`${pass} passed, ${fail} failed`);
+  if(fail){console.error(failures.slice(0,60).join('\n'));process.exit(1);}
+})().catch(error=>{console.error(error);process.exit(1);});

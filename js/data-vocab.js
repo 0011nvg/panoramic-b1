@@ -342,4 +342,596 @@ for (const v of [
     "src": "book",
     "emoji": "🌍"
   }
-]) { if (!VOCAB.some(old => old.w === v.w)) VOCAB.push(v); }
+]) { if (!VOCAB.some(old => old.w === v.w && old.lesson.startsWith('u2-'))) VOCAB.push(v); }
+
+/* Unit 2 target lexis. Translations, definitions and practice examples prepared for the platform. */
+for(const v of [
+  {
+    "w": "untidy",
+    "ru": "неопрятный; неубранный",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "My room is untidy because my clothes are on the floor.",
+    "ctx": [
+      "My room is ___ because my clothes are on the floor."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not neat or organised"
+  },
+  {
+    "w": "uncomfortable",
+    "ru": "неудобный",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "The bed was uncomfortable, so I couldn’t sleep.",
+    "ctx": [
+      "The bed was ___, so I couldn’t sleep."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not pleasant to sit, lie or stay in"
+  },
+  {
+    "w": "unfair",
+    "ru": "несправедливый",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "It is unfair to blame one person for everyone’s mistake.",
+    "ctx": [
+      "It is ___ to blame one person for everyone’s mistake."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not treating people equally or reasonably"
+  },
+  {
+    "w": "irresponsible",
+    "ru": "безответственный",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "It is irresponsible to leave rubbish on the beach.",
+    "ctx": [
+      "It is ___ to leave rubbish on the beach."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not thinking about the results of your actions"
+  },
+  {
+    "w": "unhelpful",
+    "ru": "не готовый помочь; бесполезный",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "The receptionist was unhelpful and refused to answer our questions.",
+    "ctx": [
+      "The receptionist was ___ and refused to answer our questions."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not giving help or useful information"
+  },
+  {
+    "w": "impatient",
+    "ru": "нетерпеливый",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "The passengers became impatient during the long delay.",
+    "ctx": [
+      "The passengers became ___ during the long delay."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "annoyed because you have to wait"
+  },
+  {
+    "w": "illegal",
+    "ru": "незаконный",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "It is illegal to enter this area without permission.",
+    "ctx": [
+      "It is ___ to enter this area without permission."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not allowed by law"
+  },
+  {
+    "w": "unhappy",
+    "ru": "несчастный; недовольный",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "We were unhappy when our holiday was cancelled.",
+    "ctx": [
+      "We were ___ when our holiday was cancelled."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "sad or not pleased"
+  },
+  {
+    "w": "uncertain",
+    "ru": "неуверенный; неопределённый",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "I am uncertain about our travel plans.",
+    "ctx": [
+      "I am ___ about our travel plans."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not sure about something"
+  },
+  {
+    "w": "dishonest",
+    "ru": "нечестный",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "It is dishonest to lie about the price.",
+    "ctx": [
+      "It is ___ to lie about the price."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not telling the truth or acting fairly"
+  },
+  {
+    "w": "unpopular",
+    "ru": "непопулярный",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "The new airport charge was unpopular with travellers.",
+    "ctx": [
+      "The new airport charge was ___ with travellers."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not liked by many people"
+  },
+  {
+    "w": "unable",
+    "ru": "неспособный; не имеющий возможности",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "We were unable to leave because the road was closed.",
+    "ctx": [
+      "We were ___ to leave because the road was closed."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not able to do something"
+  },
+  {
+    "w": "impossible",
+    "ru": "невозможный",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "It was impossible to sleep because of the noise.",
+    "ctx": [
+      "It was ___ to sleep because of the noise."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "not possible"
+  },
+  {
+    "w": "disabled",
+    "ru": "имеющий инвалидность",
+    "ipa": "",
+    "pos": "adj",
+    "ex": "The hotel provides accessible rooms for disabled guests.",
+    "ctx": [
+      "The hotel provides accessible rooms for ___ guests."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "having a condition that can affect the activities a person can do"
+  },
+  {
+    "w": "influence",
+    "ru": "влиять на",
+    "ipa": "",
+    "pos": "v",
+    "ex": "Online reviews can influence our holiday choices.",
+    "ctx": [
+      "Online reviews can ___ our holiday choices."
+    ],
+    "lesson": "u2-reading",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "affect the way someone thinks or behaves"
+  },
+  {
+    "w": "effect",
+    "ru": "влияние; результат",
+    "ipa": "",
+    "pos": "n",
+    "ex": "Tourism can have a positive effect on local businesses.",
+    "ctx": [
+      "Tourism can have a positive ___ on local businesses."
+    ],
+    "lesson": "u2-reading",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "a change caused by something"
+  },
+  {
+    "w": "affects",
+    "ru": "влияет на",
+    "ipa": "",
+    "pos": "v",
+    "ex": "Being tired affects my ability to concentrate.",
+    "ctx": [
+      "Being tired ___ my ability to concentrate."
+    ],
+    "lesson": "u2-reading",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "changes or influences something"
+  },
+  {
+    "w": "rubbish",
+    "ru": "мусор",
+    "ipa": "",
+    "pos": "n",
+    "ex": "Please take your rubbish home after your picnic.",
+    "ctx": [
+      "Please take your ___ home after your picnic."
+    ],
+    "lesson": "u2-reading",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "things people throw away"
+  },
+  {
+    "w": "previously",
+    "ru": "ранее; прежде",
+    "ipa": "",
+    "pos": "adv",
+    "ex": "This quiet village was previously unknown to most tourists.",
+    "ctx": [
+      "This quiet village was ___ unknown to most tourists."
+    ],
+    "lesson": "u2-reading",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "before the time being talked about"
+  },
+  {
+    "w": "wildlife",
+    "ru": "дикая природа; дикие животные",
+    "ipa": "",
+    "pos": "n",
+    "ex": "We saw amazing wildlife in the national park.",
+    "ctx": [
+      "We saw amazing ___ in the national park."
+    ],
+    "lesson": "u2-reading",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "animals and plants living in natural conditions"
+  },
+  {
+    "w": "speed up",
+    "ru": "ускоряться; ускорять",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "The driver had to speed up on the motorway.",
+    "ctx": [
+      "The driver had to ___ on the motorway."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "move or happen faster"
+  },
+  {
+    "w": "pick up",
+    "ru": "заезжать за кем-либо; забирать",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "My dad will pick up my sister from the station.",
+    "ctx": [
+      "My dad will ___ my sister from the station."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "collect someone in a vehicle"
+  },
+  {
+    "w": "turn up",
+    "ru": "появляться; приезжать",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "Our friends might turn up later this evening.",
+    "ctx": [
+      "Our friends might ___ later this evening."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "arrive at a place"
+  },
+  {
+    "w": "set off",
+    "ru": "отправляться в путь",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "We need to set off early to avoid the traffic.",
+    "ctx": [
+      "We need to ___ early to avoid the traffic."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "begin a journey"
+  },
+  {
+    "w": "take off",
+    "ru": "взлетать (о самолёте)",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "The plane will take off in ten minutes.",
+    "ctx": [
+      "The plane will ___ in ten minutes."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "leave the ground and begin to fly"
+  },
+  {
+    "w": "check in",
+    "ru": "регистрироваться (на рейс; в отеле)",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "We can check in online before we go to the airport.",
+    "ctx": [
+      "We can ___ online before we go to the airport."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "register your arrival at an airport or hotel"
+  },
+  {
+    "w": "break down",
+    "ru": "ломаться (о транспорте)",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "Old cars sometimes break down on long journeys.",
+    "ctx": [
+      "Old cars sometimes ___ on long journeys."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "stop working because of a fault"
+  },
+  {
+    "w": "drop off",
+    "ru": "подвозить и высаживать",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "Can you drop off my brother outside the school?",
+    "ctx": [
+      "Can you ___ my brother outside the school?"
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "take someone somewhere and leave them there"
+  },
+  {
+    "w": "show up",
+    "ru": "появляться; приходить",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "Please show up at the station before eight.",
+    "ctx": [
+      "Please ___ at the station before eight."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "arrive or appear"
+  },
+  {
+    "w": "pack up",
+    "ru": "собирать вещи",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "We must pack up our tent before we leave.",
+    "ctx": [
+      "We must ___ our tent before we leave."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "put your belongings into bags before leaving"
+  },
+  {
+    "w": "drop in",
+    "ru": "заходить ненадолго",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "We might drop in on our cousins during our trip.",
+    "ctx": [
+      "We might ___ on our cousins during our trip."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "make a short informal visit"
+  },
+  {
+    "w": "close down",
+    "ru": "закрываться; прекращать работу",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "The old hotel may close down next year.",
+    "ctx": [
+      "The old hotel may ___ next year."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "stop operating permanently"
+  },
+  {
+    "w": "take out",
+    "ru": "вынимать; выносить",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "Please take out your passport at the desk.",
+    "ctx": [
+      "Please ___ your passport at the desk."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "remove something from a place"
+  },
+  {
+    "w": "go out",
+    "ru": "выходить",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "We can go out after we finish packing.",
+    "ctx": [
+      "We can ___ after we finish packing."
+    ],
+    "lesson": "u2-use",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "leave a building to do an activity"
+  },
+  {
+    "w": "have time to",
+    "ru": "иметь время, чтобы",
+    "ipa": "",
+    "pos": "phr",
+    "ex": "Do you have time to explore the city today?",
+    "ctx": [
+      "Do you ___ explore the city today?"
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "have enough time to do something"
+  },
+  {
+    "w": "spend time",
+    "ru": "проводить время; тратить время",
+    "ipa": "",
+    "pos": "phr",
+    "ex": "Do you spend time reading on holiday?",
+    "ctx": [
+      "Do you ___ reading on holiday?"
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "use a period of time doing an activity"
+  },
+  {
+    "w": "interested in",
+    "ru": "интересующийся чем-либо",
+    "ipa": "",
+    "pos": "phr",
+    "ex": "I am interested in visiting historical places.",
+    "ctx": [
+      "I am ___ visiting historical places."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "wanting to know or learn about something"
+  },
+  {
+    "w": "look forward to",
+    "ru": "с нетерпением ждать",
+    "ipa": "",
+    "pos": "phr v",
+    "ex": "I always look forward to the summer holidays.",
+    "ctx": [
+      "I always ___ the summer holidays."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "feel excited about something that will happen"
+  },
+  {
+    "w": "keen on",
+    "ru": "увлекающийся; любящий",
+    "ipa": "",
+    "pos": "phr",
+    "ex": "My sister is keen on trying new food.",
+    "ctx": [
+      "My sister is ___ trying new food."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "very interested in an activity"
+  },
+  {
+    "w": "prevent someone from",
+    "ru": "мешать; препятствовать",
+    "ipa": "",
+    "pos": "phr",
+    "ex": "Bad weather can prevent someone from travelling.",
+    "ctx": [
+      "Bad weather can ___ travelling."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "stop someone doing something"
+  },
+  {
+    "w": "ready for",
+    "ru": "готовый к",
+    "ipa": "",
+    "pos": "phr",
+    "ex": "We are ready for our next adventure.",
+    "ctx": [
+      "We are ___ our next adventure."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "prepared for something"
+  },
+  {
+    "w": "make someone do",
+    "ru": "заставлять кого-либо делать",
+    "ipa": "",
+    "pos": "phr",
+    "ex": "A coach can make someone do a safety check.",
+    "ctx": [
+      "A coach can ___ a safety check."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍",
+    "def": "force or require a person to do something"
+  }
+]){if(!VOCAB.some(old=>old.w===v.w&&old.lesson.startsWith('u2-')))VOCAB.push(v);}

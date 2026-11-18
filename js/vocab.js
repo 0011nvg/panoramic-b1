@@ -6,13 +6,31 @@
   const INTERVALS = [0, 10 * MIN, DAY, 3 * DAY, 7 * DAY, 16 * DAY];
   const MASTER_BOX = 4;
 
-  const byW = {}; VOCAB.forEach(v => { byW[v.w] = v; });
+  // A word can belong to several units and have different meanings in each.
+  const unit = v => (window.LESSONS && LESSONS[v.lesson] && LESSONS[v.lesson].unit) || v.unit || 'shared';
+  const key = value => typeof value === 'object' && value ? unit(value) + ':' + value.w : (byW[String(value)] ? key(byW[String(value)]) : String(value));
+  const byW = Object.create(null);
+  VOCAB.forEach(v => { byW[key(v)] = v; if (!byW[v.w]) byW[v.w] = v; });
+  const uniqueWords = list => { const seen = new Set(); return (list || []).filter(v => { const k = v.w.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }); };
+  const pairWords = list => { const translations = new Set(); return uniqueWords(list).filter(v => { const ru = v.ru.toLowerCase(); if (translations.has(ru)) return false; translations.add(ru); return true; }); };
+  const freshWord = () => ({ box: 0, due: 0, seen: false, c: 0, x: 0 });
+  function migrateWord(value) {
+    const id = key(value), d = Store.data().vocab;
+    const word = byW[id] && byW[id].w;
+    // Existing raw records belong only to their original first entry. Keep the
+    // raw record intact as a backup; do not copy its progress into another unit.
+    if (!d[id] && word && key(byW[word]) === id && d[word]) {
+      d[id] = Object.assign({}, d[word]); Store.save();
+    }
+    return id;
+  }
   const accepted = v => [v.w].concat(v.alt || []);
 
   /* ---------- SRS ---------- */
   const SRS = {
-    st(w) { return Store.data().vocab[w] || { box: 0, due: 0, seen: false, c: 0, x: 0 }; },
-    mut(w) { const d = Store.data().vocab; return d[w] || (d[w] = { box: 0, due: 0, seen: false, c: 0, x: 0 }); },
+    key,
+    st(w) { return Store.data().vocab[migrateWord(w)] || freshWord(); },
+    mut(w) { const id = migrateWord(w), d = Store.data().vocab; return d[id] || (d[id] = freshWord()); },
     seen(w) { const s = this.mut(w); if (!s.seen) { s.seen = true; s.first = Date.now(); Store.save(); } },
     grade(w, ok, kind) {
       const s = this.mut(w), now = Date.now(), before = s.box; s.seen = true; s.last = now;
@@ -23,13 +41,13 @@
         else if (s.box === 0) { s.box = 1; s.due = now + INTERVALS[1]; }   // узнавание не отодвигает уже назначенное повторение
       } else { s.x++; s.box = Math.min(s.box, 1); s.due = now; s.lastWrong = now; }
       Store.save();
-      document.dispatchEvent(new CustomEvent('vocab-graded', { detail: { w, ok, kind, before, after: s.box } }));
+      document.dispatchEvent(new CustomEvent('vocab-graded', { detail: { w: (typeof w === 'object' ? w.w : (byW[key(w)] ? byW[key(w)].w : w)), key: key(w), ok, kind, before, after: s.box } }));
       document.dispatchEvent(new CustomEvent('progress-changed'));
     },
     status(w) { const s = this.st(w); if (!s.seen) return 'new'; if (s.box >= MASTER_BOX) return 'mastered'; if (s.x > 0 && s.box < 3) return 'difficult'; return 'learning'; },
-    due(list) { const now = Date.now(); return list.filter(v => { const s = this.st(v.w); return s.seen && s.due <= now && s.box < 5; }); },
-    difficult(list) { return list.filter(v => { const s = this.st(v.w); return s.x > 0 && s.box < MASTER_BOX; }); },
-    stats(list) { const r = { new: 0, learning: 0, difficult: 0, mastered: 0 }; list.forEach(v => r[this.status(v.w)]++); return r; }
+    due(list) { const now = Date.now(); return list.filter(v => { const s = this.st(v); return s.seen && s.due <= now && s.box < 5; }); },
+    difficult(list) { return list.filter(v => { const s = this.st(v); return s.x > 0 && s.box < MASTER_BOX; }); },
+    stats(list) { const r = { new: 0, learning: 0, difficult: 0, mastered: 0 }; list.forEach(v => r[this.status(v)]++); return r; }
   };
 
   /* ---------- speech (browser voice, only for single words; optional) ---------- */
@@ -51,7 +69,7 @@
       answered = true; inp.readOnly = true; inp.classList.add(ok ? 'ok' : 'bad');
       fb.className = 'q-fb ' + (ok ? 'ok' : 'bad');
       fb.textContent = ok ? 'Correct! ' : 'Not quite. Correct answer: ' + (opts.acc ? opts.acc[0] : v.w);
-      SRS.grade(v.w, ok, kind); go.textContent = 'Next →'; go.focus();
+      SRS.grade(v, ok, kind); go.textContent = 'Next →'; go.focus();
       done.result = ok;
     };
     go.onclick = submit; inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
@@ -63,11 +81,11 @@
     const next = h('button', { class: 'btn primary', hidden: true, onclick: () => done() }, 'Next →');
     options.forEach((o, i) => btns.push(h('button', { class: 'opt', onclick: () => {
       if (answered) return; answered = true; const ok = i === correctIdx; btns[i].classList.add(ok ? 'ok' : 'bad'); btns[correctIdx].classList.add('ok');
-      fb.className = 'q-fb ' + (ok ? 'ok' : 'bad'); fb.textContent = ok ? 'Correct!' : 'The answer is: ' + options[correctIdx]; SRS.grade(v.w, ok, kind); done.result = ok; next.hidden = false; next.focus();
+      fb.className = 'q-fb ' + (ok ? 'ok' : 'bad'); fb.textContent = ok ? 'Correct!' : 'The answer is: ' + options[correctIdx]; SRS.grade(v, ok, kind); done.result = ok; next.hidden = false; next.focus();
     } }, o)));
     return h('div', { class: 'q' }, h('div', { class: 'q-prompt' }, prompt), sub ? h('div', { class: 'q-sub' }, sub) : null, h('div', { class: 'opts col' }, btns), fb, next);
   }
-  function distractors(v, pool, field) { return shuffle(pool.filter(x => x.w !== v.w)).slice(0, 3).map(x => x[field]); }
+  function distractors(v, pool, field) { return shuffle([...new Set((pool || []).filter(x => x.w !== v.w && x[field] !== v[field] && (field !== 'w' || x.ru !== v.ru)).map(x => x[field]))]).slice(0, 3); }
 
   const KINDS = {
     type: (v) => d => typed(v, v.ru, v.def + (v.pos ? ' (' + v.pos + ')' : ''), 'recall', d),
@@ -87,17 +105,18 @@
   };
   /* ---------- слова с картинкой ---------- */
   const hasPic = v => !!(window.Pics && Pics.wordPic(v) && Pics.has(Pics.wordPic(v)));
-  function picPool(pool) { const p = (pool || VOCAB).filter(hasPic); return p.length >= 4 ? p : VOCAB.filter(hasPic); }
-  function picSet(words) { const p = words.filter(hasPic); return { list: p.length >= 4 ? p : VOCAB.filter(hasPic), own: p.length >= 4 }; }
+  function picPool(pool) { return uniqueWords(pool).filter(hasPic); }
+  function picSet(words) { return { list: picPool(words), own: true }; }
+  function noPictures(host, onExit) { host.innerHTML = ''; host.append(h('p', { class: 'muted', role: 'status' }, 'В этом наборе пока нет слов с подходящей картинкой. Выберите другой режим для слов этого раздела.'), h('button', { class: 'btn ghost', onclick: onExit }, '← All modes')); }
   function PicMatch(host, words, onExit) {
-    const s = picSet(words); host.innerHTML = '';
-    const note = s.own ? null : h('p', { class: 'muted small' }, 'В этом наборе мало слов с картинкой — тренируем все такие слова платформы.');
+    const s = picSet(words); if (!s.list.length) { noPictures(host, onExit); return; } host.innerHTML = '';
+    const note = s.own ? null : h('p', { class: 'muted small' }, 'Тренируем слова с картинками только из выбранного набора.');
     const box = h('div'); host.append(note || '', box);
     Runner(box, shuffle(s.list).slice(0, 10), () => 'pic', { onExit, pool: s.list });
   }
   /* ---------- Scene Explorer: сцена с предметами — изучи, потом найди ---------- */
   function SceneExplorer(host, words, onExit) {
-    const s = picSet(words); const list = shuffle(s.list).slice(0, 8);
+    const s = picSet(words); if (!s.list.length) { noPictures(host, onExit); return; } const list = shuffle(s.list).slice(0, 8);
     const POS = [[16, 34], [40, 26], [64, 32], [86, 26], [24, 70], [48, 76], [72, 70], [90, 74]];
     host.innerHTML = '';
     const stage = h('div', { class: 'scene-stage', role: 'group', 'aria-label': 'Scene with objects' });
@@ -109,12 +128,12 @@
     const seen = new Set(); let mode = 'explore', order = [], qi = 0, right = 0, tries = 0;
     const objs = list.map((v, i) => { const b = h('button', { class: 'sc-obj', style: { left: POS[i][0] + '%', top: POS[i][1] + '%' }, 'aria-label': mode === 'explore' ? v.w : 'object ' + (i + 1), onclick: () => tap(v, b) }, Pics.img(Pics.wordPic(v), { size: 128 })); b._v = v; return b; });
     objs.forEach(b => stage.appendChild(b)); stage.appendChild(say);
-    host.append(s.own ? '' : h('p', { class: 'muted small' }, 'В этом наборе мало слов с картинкой — сцена собрана из слов всей платформы.'), bar, stage, fb);
+    host.append(s.own ? '' : h('p', { class: 'muted small' }, 'Сцена использует только слова выбранного набора.'), bar, stage, fb);
     function tap(v, b) {
-      if (mode === 'explore') { seen.add(v.w); b.classList.add('seen'); SRS.seen(v.w); say.innerHTML = ''; say.append(h('b', null, v.w), h('span', null, v.ipa + ' · ' + v.ru)); speak(v.w); if (seen.size === list.length) goBtn.focus(); return; }
+      if (mode === 'explore') { seen.add(key(v)); b.classList.add('seen'); SRS.seen(v); say.innerHTML = ''; say.append(h('b', null, v.w), h('span', null, v.ipa + ' · ' + v.ru)); speak(v.w); if (seen.size === list.length) goBtn.focus(); return; }
       if (mode !== 'quest' || b.classList.contains('gone')) return;
       const target = order[qi]; tries++;
-      if (v.w === target.w) { const first = tries === 1; if (first) right++; SRS.grade(v.w, first, 'recog'); b.classList.remove('bad'); b.classList.add('ok', 'gone'); fb.className = 'q-fb ok'; fb.textContent = first ? 'Correct! ' + v.w : 'Yes — ' + v.w + '. (не с первой попытки)'; qi++; tries = 0; setTimeout(next, 650); }
+      if (key(v) === key(target)) { const first = tries === 1; if (first) right++; SRS.grade(v, first, 'recog'); b.classList.remove('bad'); b.classList.add('ok', 'gone'); fb.className = 'q-fb ok'; fb.textContent = first ? 'Correct! ' + v.w : 'Yes — ' + v.w + '. (не с первой попытки)'; qi++; tries = 0; setTimeout(next, 650); }
       else { b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad'); fb.className = 'q-fb bad'; fb.textContent = 'Not this one — it’s “' + v.w + '”. Try again!'; }
     }
     function quest() { mode = 'quest'; order = shuffle(list); qi = 0; right = 0; goBtn.hidden = true; objs.forEach((b, i) => { b.classList.remove('seen', 'ok', 'gone'); b.setAttribute('aria-label', 'object ' + (i + 1)); }); say.hidden = true; next(); }
@@ -145,7 +164,7 @@
     function finish() {
       finished = true; const built = picked.map(t => t.c).join(' '); const ok = key(built) === key(v.ex);
       fb.className = 'q-fb ' + (ok ? 'ok' : 'bad'); fb.textContent = ok ? 'Correct! ' + v.ex : 'Model: “' + v.ex + '”';
-      if (ok) SRS.grade(v.w, true, 'recog');   // ошибка в порядке слов — не ошибка в слове: в Difficult Words не попадает
+      if (ok) SRS.grade(v, true, 'recog');   // ошибка в порядке слов — не ошибка в слове: в Difficult Words не попадает
       done.result = ok; line.classList.add(ok ? 'ok' : 'bad'); paint(); next.hidden = false; next.focus();
     }
     paint();
@@ -165,7 +184,7 @@
     }
     function finish() {
       let k = 0; const built = chars.map(c => fixed(c) ? c : picked[k++].c).join(''); const ok = built.toLowerCase() === v.w.toLowerCase();
-      fb.className = 'q-fb ' + (ok ? 'ok' : 'bad'); fb.textContent = ok ? 'Correct! ' + v.w : 'You built “' + built + '”. Correct: ' + v.w; SRS.grade(v.w, ok, 'recog'); done.result = ok; next.hidden = false; pool.querySelectorAll('button').forEach(b => b.disabled = true); next.focus();
+      fb.className = 'q-fb ' + (ok ? 'ok' : 'bad'); fb.textContent = ok ? 'Correct! ' + v.w : 'You built “' + built + '”. Correct: ' + v.w; SRS.grade(v, ok, 'recog'); done.result = ok; next.hidden = false; pool.querySelectorAll('button').forEach(b => b.disabled = true); next.focus();
     }
     paint();
     return h('div', { class: 'q' }, h('div', { class: 'q-prompt' }, v.ru), h('div', { class: 'q-sub' }, v.def), slots, pool,
@@ -174,9 +193,9 @@
 
   /* ---------- Runner: one question at a time ---------- */
   function Runner(host, words, kindFor, opts) {
-    opts = opts || {};
+    opts = opts || {}; words = uniqueWords(words);
     const qs = Array.isArray(kindFor) ? kindFor.slice() : words.map(v => ({ v, k: kindFor(v) })); let i = 0, right = 0; const wrong = [];
-    const pool = opts.pool || VOCAB;
+    const pool = uniqueWords(opts.pool || words);
     const bar = h('div', { class: 'pbar' }, h('i')); const stage = h('div', { class: 'stage' }); const count = h('div', { class: 'muted small' });
     const label = opts.label ? h('span', { class: 'chip run-stage' }) : null;
     host.innerHTML = ''; host.append(h('div', { class: 'run-top' }, count, label, bar), stage);
@@ -188,7 +207,7 @@
       stage.innerHTML = ''; stage.appendChild(KINDS[q.k](q.v, pool)(done));
     }
     function end() {
-      bar.firstChild.style.width = '100%'; const pct = Math.round(right / qs.length * 100);
+      bar.firstChild.style.width = '100%'; const pct = qs.length ? Math.round(right / qs.length * 100) : 0;
       if (opts.test) { Store.data().tests.push({ t: Date.now(), name: opts.test, score: right, max: qs.length }); Store.save(); }
       document.dispatchEvent(new CustomEvent('vocab-run-end', { detail: { right, total: qs.length, pct, test: opts.test || null, bonus: !!opts.bonus, guided: !!opts.guided } }));
       stage.innerHTML = '';
@@ -206,7 +225,7 @@
 
   /* ---------- Guided session: Learn → Recognise → Use → Recall для одного набора слов ---------- */
   function pickGuided(words, n) {
-    const rank = v => { const s = SRS.st(v.w); const st = SRS.status(v.w); return st === 'difficult' ? 0 : (s.seen && s.due <= Date.now() && st !== 'mastered') ? 1 : st === 'new' ? 2 : st === 'learning' ? 3 : 4; };
+    const rank = v => { const s = SRS.st(v); const st = SRS.status(v); return st === 'difficult' ? 0 : (s.seen && s.due <= Date.now() && st !== 'mastered') ? 1 : st === 'new' ? 2 : st === 'learning' ? 3 : 4; };
     return shuffle(words).sort((a, b) => rank(a) - rank(b)).slice(0, n || 8);
   }
   const GSTAGE = { toRu: 'Recognise', ctxChoice: 'Use', type: 'Recall', ctx: 'Recall' };
@@ -222,7 +241,8 @@
   /* ---------- Keks Blitz: 60 секунд на узнавание ---------- */
   function Blitz(host, words, onExit, setId) {
     const SEC = 60; let left = SEC, score = 0, streak = 0, best = 0, timer = null, misses = [];
-    const pool = words.length >= 4 ? words : VOCAB;
+    const pool = uniqueWords(words);
+    if (!pool.length) { host.innerHTML = ''; host.append(h('p', null, 'В выбранном наборе пока нет слов.'), h('button', { class: 'btn ghost', onclick: onExit }, '← All modes')); return; }
     const t = h('b', { class: 'bz-t' }, SEC + 's'); const sc = h('b', { class: 'bz-s' }, '0'); const st = h('span', { class: 'bz-k' }); const stage = h('div', { class: 'stage' });
     const rec = () => ((Store.data().game || {}).blitz || {})[setId || 'all'] || 0;
     function q() {
@@ -231,7 +251,7 @@
       const prompt = k === 'toRu' ? v.w : k === 'toEn' ? v.ru : v.def;
       stage.innerHTML = ''; stage.append(h('div', { class: 'q' }, h('div', { class: 'q-prompt' }, prompt), h('div', { class: 'opts grid2' }, opts.map((o, i) => h('button', { class: 'opt', onclick: e => {
         if (!timer) return; const ok = i === ci;
-        if (ok) { score += 1 + Math.min(2, Math.floor(streak / 3)); streak++; best = Math.max(best, streak); SRS.grade(v.w, true, 'recog'); }
+        if (ok) { score += 1 + Math.min(2, Math.floor(streak / 3)); streak++; best = Math.max(best, streak); SRS.grade(v, true, 'recog'); }
         else { streak = 0; if (!misses.includes(v)) misses.push(v); }
         e.currentTarget.classList.add(ok ? 'ok' : 'bad'); sc.textContent = score; st.textContent = streak >= 3 ? '🔥 ×' + (1 + Math.min(2, Math.floor(streak / 3))) : '';
         setTimeout(q, ok ? 180 : 450);
@@ -252,44 +272,44 @@
 
   /* ---------- Board games: Matching & Memory ---------- */
   function Matching(host, words, onExit) {
-    const set = shuffle(words).slice(0, 6); const L = shuffle(set), R = shuffle(set); let sel = null, left = set.length; const firstTry = new Set(set.map(v => v.w));
+    const set = shuffle(pairWords(words)).slice(0, 6); const L = shuffle(set), R = shuffle(set); let sel = null, left = set.length; const firstTry = new Set(set.map(v => key(v)));
     const colL = h('div', { class: 'mcol' }), colR = h('div', { class: 'mcol' }); const fb = h('div', { class: 'q-fb', role: 'status' });
     const mk = (v, side) => { const b = h('button', { class: 'mitem', onclick: () => pick(b, v, side) }, side === 'L' ? v.w : v.ru); return b; };
     L.forEach(v => colL.appendChild(mk(v, 'L'))); R.forEach(v => colR.appendChild(mk(v, 'R')));
     function pick(b, v, side) {
       if (b.classList.contains('done')) return;
       if (!sel || sel.side === side) { if (sel) sel.b.classList.remove('sel'); sel = { b, v, side }; b.classList.add('sel'); return; }
-      if (sel.v.w === v.w) { [sel.b, b].forEach(x => { x.classList.remove('sel'); x.classList.add('done'); x.disabled = true; }); SRS.grade(v.w, firstTry.has(v.w), 'recog'); left--; sel = null; if (!left) { fb.className = 'q-fb ok'; fb.textContent = 'All pairs matched!'; } }
-      else { firstTry.delete(v.w); firstTry.delete(sel.v.w); const a = sel.b; [a, b].forEach(x => x.classList.add('shake')); setTimeout(() => [a, b].forEach(x => x.classList.remove('shake', 'sel')), 450); sel = null; }
+      if (key(sel.v) === key(v)) { [sel.b, b].forEach(x => { x.classList.remove('sel'); x.classList.add('done'); x.disabled = true; }); SRS.grade(v, firstTry.has(key(v)), 'recog'); left--; sel = null; if (!left) { fb.className = 'q-fb ok'; fb.textContent = 'All pairs matched!'; } }
+      else { firstTry.delete(key(v)); firstTry.delete(key(sel.v)); const a = sel.b; [a, b].forEach(x => x.classList.add('shake')); setTimeout(() => [a, b].forEach(x => x.classList.remove('shake', 'sel')), 450); sel = null; }
     }
     host.innerHTML = ''; host.append(h('p', { class: 'muted' }, 'Tap an English word, then its translation.'), h('div', { class: 'mboard' }, colL, colR), fb,
       h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => Matching(host, words, onExit) }, 'New round'), h('button', { class: 'btn ghost', onclick: onExit }, '← All modes')));
   }
   function Memory(host, words, onExit) {
-    const set = shuffle(words).slice(0, 6); let cards = shuffle(set.flatMap(v => [{ v, t: v.w, k: 'en' }, { v, t: v.ru, k: 'ru' }])); let open = [], moves = 0, found = 0, lock = false;
+    const set = shuffle(pairWords(words)).slice(0, 6); let cards = shuffle(set.flatMap(v => [{ v, t: v.w, k: 'en' }, { v, t: v.ru, k: 'ru' }])); let open = [], moves = 0, found = 0, lock = false;
     const grid = h('div', { class: 'mem' }); const info = h('div', { class: 'muted', role: 'status' }, 'Moves: 0');
     cards.forEach(c => { c.b = h('button', { class: 'mcard', 'aria-label': 'Hidden card', onclick: () => flip(c) }, h('span', { class: 'back' }, '?'), h('span', { class: 'front ' + c.k }, c.t)); grid.appendChild(c.b); });
     function flip(c) {
       if (lock || c.b.classList.contains('up')) return; c.b.classList.add('up'); c.b.setAttribute('aria-label', c.t); open.push(c);
       if (open.length === 2) { moves++; info.textContent = 'Moves: ' + moves; const [a, b] = open; open = [];
-        if (a.v.w === b.v.w && a.k !== b.k) { a.b.classList.add('ok'); b.b.classList.add('ok'); SRS.grade(a.v.w, true, 'recog'); found++; if (found === set.length) info.textContent = '🎉 Done in ' + moves + ' moves!'; }
+        if (key(a.v) === key(b.v) && a.k !== b.k) { a.b.classList.add('ok'); b.b.classList.add('ok'); SRS.grade(a.v, true, 'recog'); found++; if (found === set.length) info.textContent = '🎉 Done in ' + moves + ' moves!'; }
         else { lock = true; setTimeout(() => { [a, b].forEach(x => { x.b.classList.remove('up'); x.b.setAttribute('aria-label', 'Hidden card'); }); lock = false; }, 900); } }
     }
     host.innerHTML = ''; host.append(h('p', { class: 'muted' }, 'Find the pairs: English word + Russian translation.'), info, grid,
       h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => Memory(host, words, onExit) }, 'New game'), h('button', { class: 'btn ghost', onclick: onExit }, '← All modes')));
   }
   function Flashcards(host, words, onExit) {
-    let i = 0; const list = shuffle(words);
+    let i = 0; const list = shuffle(uniqueWords(words));
     const wrap = h('div'); host.innerHTML = ''; host.appendChild(wrap);
     function show() {
       if (i >= list.length) { wrap.innerHTML = ''; wrap.append(h('div', { class: 'run-end' }, h('p', null, 'You have seen all ' + list.length + ' cards. Now try Recognise and Recall modes!'), h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => Flashcards(host, words, onExit) }, 'Again'), h('button', { class: 'btn ghost', onclick: onExit }, '← All modes')))); return; }
-      const v = list[i]; SRS.seen(v.w);
+      const v = list[i]; SRS.seen(v);
       const card = h('button', { class: 'fcard', 'aria-label': 'Flip card', onclick: () => card.classList.toggle('flip') },
         h('div', { class: 'fc-face front' }, h('div', { class: 'fc-emo', 'aria-hidden': 'true' }, (window.Pics && Pics.wordPic(v)) || v.emoji || '★'), h('div', { class: 'fc-w' }, v.w), h('div', { class: 'fc-ipa' }, v.ipa + '  ·  ' + v.pos), h('div', { class: 'muted small' }, 'tap to flip')),
         h('div', { class: 'fc-face back' }, h('div', { class: 'fc-ru' }, v.ru), h('div', { class: 'fc-def' }, v.def), h('div', { class: 'fc-ex' }, '“' + v.ex + '”')));
       wrap.innerHTML = '';
       wrap.append(h('div', { class: 'muted small' }, (i + 1) + ' / ' + list.length + ' · Stage 1 — Learn'), card,
-        h('div', { class: 'row center' }, sayBtn(v.w), h('button', { class: 'btn ghost', onclick: () => { SRS.grade(v.w, false, 'intro'); i++; show(); } }, 'Not yet'), h('button', { class: 'btn primary', onclick: () => { SRS.grade(v.w, true, 'recog'); i++; show(); } }, 'I know it ✓')));
+        h('div', { class: 'row center' }, sayBtn(v.w), h('button', { class: 'btn ghost', onclick: () => { SRS.grade(v, false, 'intro'); i++; show(); } }, 'Not yet'), h('button', { class: 'btn primary', onclick: () => { SRS.grade(v, true, 'recog'); i++; show(); } }, 'I know it ✓')));
     }
     show();
   }
@@ -298,9 +318,9 @@
     host.innerHTML = '';
     host.append(h('p', { class: 'muted' }, 'Stage 5 — Personalise. Write a TRUE sentence about you with each word. The site checks that the word is used; your tutor checks the meaning and grammar.'),
       h('ol', { class: 'pers' }, set.map(v => {
-        const ta = h('textarea', { class: 'inp', rows: 2, 'aria-label': 'Sentence with ' + v.w }); ta.value = st.personal[v.w] || '';
+        const ta = h('textarea', { class: 'inp', rows: 2, 'aria-label': 'Sentence with ' + v.w }); ta.value = st.personal[key(v)] || (key(byW[v.w]) === key(v) ? st.personal[v.w] : '') || '';
         const fb = h('div', { class: 'q-fb' });
-        const chk = () => { const t = norm(ta.value); const stem = norm(v.w).replace(/(e|s|es)$/, ''); const ok = t.split(' ').length >= 5 && t.includes(stem); fb.className = 'q-fb ' + (ok ? 'ok' : 'bad'); fb.textContent = ok ? 'Great — show it to your tutor!' : 'Use “' + v.w + '” in a sentence of at least 5 words.'; st.personal[v.w] = ta.value; Store.save(); if (ok) SRS.seen(v.w); };
+        const chk = () => { const t = norm(ta.value); const stem = norm(v.w).replace(/(e|s|es)$/, ''); const ok = t.split(' ').length >= 5 && t.includes(stem); fb.className = 'q-fb ' + (ok ? 'ok' : 'bad'); fb.textContent = ok ? 'Great — show it to your tutor!' : 'Use “' + v.w + '” in a sentence of at least 5 words.'; st.personal[key(v)] = ta.value; Store.save(); if (ok) SRS.seen(v); };
         return h('li', null, h('b', null, v.w), ' — ', h('span', { class: 'muted' }, v.ru), ta, h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: chk }, 'Check'), h('span', { class: 'tutor-only' }, 'Tutor: ', h('label', { class: 'cb' }, h('input', { type: 'checkbox' }), 'OK'))), fb);
       })),
       h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: onExit }, '← All modes')));
@@ -318,7 +338,7 @@
     { id: 'type', stage: 'Recall', name: 'Type the Word', desc: 'See the translation — type the word.', run: (h0, w, x) => Runner(h0, shuffle(w), () => 'type', { onExit: x }) },
     { id: 'spell', stage: 'Recall', name: 'Spelling Challenge', desc: 'Transcription + translation → exact spelling.', run: (h0, w, x) => Runner(h0, shuffle(w), () => 'spell', { onExit: x }) },
     { id: 'ctx', stage: 'Use', name: 'Vocabulary in Context', desc: 'Complete new sentences.', run: (h0, w, x) => Runner(h0, shuffle(w), () => 'ctx', { onExit: x }) },
-    { id: 'choose', stage: 'Use', name: 'Right Word, Right Place', desc: 'Choose the word that fits a new sentence.', run: (h0, w, x) => Runner(h0, shuffle(w), () => 'ctxChoice', { onExit: x, pool: w.length >= 4 ? w : VOCAB }) },
+    { id: 'choose', stage: 'Use', name: 'Right Word, Right Place', desc: 'Choose the word that fits a new sentence.', run: (h0, w, x) => Runner(h0, shuffle(w), () => 'ctxChoice', { onExit: x, pool: w }) },
     { id: 'sent', stage: 'Use', name: 'Sentence Builder', desc: 'Put the example sentence together.', run: (h0, w, x) => Runner(h0, shuffle(w).slice(0, 10), () => 'sent', { onExit: x }) },
     { id: 'pers', stage: 'Personalise', name: 'Make it yours', desc: 'Write true sentences about you.', run: (h0, w, x) => Personalise(h0, w, x) },
     { id: 'pic', stage: 'Recognise', name: 'Picture Match', desc: 'See the 3D picture — choose the word.', run: (h0, w, x) => PicMatch(h0, w, x) },
@@ -327,5 +347,5 @@
     { id: 'boss', stage: 'Review', name: 'Vocabulary Boss Challenge', desc: 'Mixed test. Beat the boss with 80%.', boss: true, run: (h0, w, x, name) => Runner(h0, shuffle(w).slice(0, 12), () => ['type', 'ctx', 'def', 'spell', 'toEn'][Math.floor(Math.random() * 5)], { onExit: x, test: name || 'Boss Challenge' }) }
   ];
 
-  window.Vocab = { SRS, MODES, Runner, Guided, Blitz, pickGuided, KINDS, byW, speak, sayBtn, canSpeak, MASTER_BOX, INTERVALS };
+  window.Vocab = { key, uniqueWords, SRS, MODES, Runner, Guided, Blitz, pickGuided, KINDS, byW, speak, sayBtn, canSpeak, MASTER_BOX, INTERVALS };
 })();

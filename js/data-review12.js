@@ -39,3 +39,6 @@ LESSONS['r12-action']={id:'r12-action',unit:'r12',code:'R.2',title:'Take a momen
 ]};
 Object.assign(BOOK.units.find(u=>u.id==='r12'),{ready:true,soon:false,lessons:['r12-revision','r12-action']});
 })();
+
+/* Prepared examples for open responses; no automatic single-answer grading. */
+(function(){const models={"r12-wellbeing-reflect": "I could practise mindfulness for five minutes after school in my bedroom. Follow-up example: I sat quietly and paid attention to my breathing. Afterwards, I felt calmer and found it easier to start my homework."};for(const L of Object.values(LESSONS))for(const sec of L.sections)for(const it of sec.items){if(models[it.id]&&!it.sample)it.sample={src:"own",html:"<p>"+models[it.id]+"</p>"};}})();

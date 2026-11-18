@@ -1,0 +1,11 @@
+{
+  "name": "optimise-b1",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Independent interactive English lessons for Optimise B1",
+  "scripts": {
+    "dev": "node tools/serve.mjs",
+    "test": "node tests/static.js",
+    "check": "node tests/static.js"
+  }
+}

@@ -126,11 +126,12 @@
 
   /* ---------- Bonus round: 5 слов (сложные → пора повторить → слова урока) ---------- */
   function bonusWords() {
-    const lesson = (location.hash.match(/^#\/lesson\/([^/]+)/) || [])[1];
-    const seen = VOCAB.filter(v => SRS.st(v.w).seen);
-    const pool = [].concat(SRS.difficult(VOCAB), SRS.due(VOCAB), lesson ? VOCAB.filter(v => v.lesson === lesson && SRS.st(v.w).seen) : [], seen);
-    const out = []; pool.forEach(v => { if (!out.includes(v)) out.push(v); });
-    return out.slice(0, 5);
+    const route = location.hash.split('/');
+    const setId = ['lesson', 'vocab'].includes(route[1]) ? route[2] : null;
+    const selected = setId && LESSONS[setId] ? VOCAB.filter(v => LESSONS[v.lesson] && LESSONS[v.lesson].unit === LESSONS[setId].unit)
+      : setId && BOOK.units.some(u => u.id === setId) ? VOCAB.filter(v => LESSONS[v.lesson] && LESSONS[v.lesson].unit === setId) : VOCAB;
+    const seen = selected.filter(v => SRS.st(v).seen);
+    return Vocab.uniqueWords([].concat(SRS.difficult(selected), SRS.due(selected), seen)).slice(0, 5);
   }
   function bonus() {
     const words = bonusWords(); if (words.length < 3) return;

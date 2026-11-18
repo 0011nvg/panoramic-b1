@@ -11,7 +11,7 @@
       return h('div', { class: 'audio-ph', role: 'note' },
         h('span', { class: 'audio-ph-ic', 'aria-hidden': 'true' }, '♪'),
         h('div', null, h('strong', null, 'Аудио ' + (audio ? audio.track : '') + ' пока нет на сайте.'),
-          h('span', { class: 'muted' }, ' Файл этой дорожки не входил в присланные материалы. Задание можно выполнить по тексту учебника; плеер появится, когда файл добавят в папку audio/.')));
+          h('span', { class: 'muted' }, ' Эта дорожка отсутствует в предоставленных материалах. Если задание требует прослушивания, оно ожидает запись и не оценивается. Текстовые задания с дополнительным аудио можно выполнить по напечатанному тексту.')));
     }
     const el = h('audio', { preload: 'metadata', src: audio.file });
     const play = h('button', { class: 'ap-btn', 'aria-label': 'Play' }, '▶');
@@ -62,6 +62,64 @@
   /* где взят ключ: Teacher’s Book или подготовлен для платформы */
   const KEYSRC = { tb: ['Ключ: Teacher’s Book', 'ks-tb'], 'tb-sug': ['Ключ: Teacher’s Book (suggested answers)', 'ks-tb'], own: ['Ключ подготовлен для платформы — не из Teacher’s Book', 'ks-own'], free: ['Свободные ответы (Teacher’s Book: Students’ own answers)', 'ks-free'], none: ['Ключа нет: ответы зависят от видео/аудио, которых нет в материалах', 'ks-own'] };
 
+  /* Read-only answer extraction: never calls exercise APIs or alters student state. */
+  const asAnswers = value => (value == null ? [] : [].concat(value)).map(String);
+  function teacherAnswers(it) {
+    if (!it || it.mediaRequired || it.keySrc === 'none') return [];
+    const src = it.type === 'listen' ? (it.inner || {}) : it;
+    if (src.answers === null) return [];
+    const rows = [];
+    const add = (label, values) => { const answers = asAnswers(values).filter(v => v !== 'undefined' && v !== 'null'); if (answers.length) rows.push({ label: String(label), answers }); };
+    const type = src.type || it.type;
+    if (type === 'gaps') {
+      let n = 0;
+      (src.paras || []).forEach((p, pi) => p.forEach(seg => {
+        if (!seg || typeof seg !== 'object' || seg.given != null || seg.br) return;
+        if (seg.open) { if (seg.key) add('Образец ' + (++n), seg.key); return; }
+        add(src.numbered ? String((src.numStart || 1) + pi) + ' · ' + (++n) : String(seg.n || ++n), seg.a);
+      }));
+    } else if (type === 'mcq') (src.questions || []).forEach((q, i) => {
+      if (q.a != null) add(q.n || i + 1, [].concat(q.a).map(idx => q.options[idx]));
+    });
+    else if (type === 'inline') {
+      let n = 0; (src.lines ? src.lines.flat() : src.text || []).forEach(seg => { if (seg && typeof seg === 'object') add(++n, [].concat(seg.a).map(idx => (seg.o || [])[idx])); });
+    } else if (type === 'rulebox') (src.rules || []).forEach((r, i) => add(r.n || i + 1, r.a));
+    else if (type === 'underline') (src.sentences || []).forEach((row, i) => {
+      add(row.label || i + 1, (row.verbs || []).map(idx => row.tokens[idx]).join(' ') + ' — ' + (src.tenses || [])[row.tense]);
+    });
+    else if (type === 'match') (src.left || []).forEach((left, i) => add(left, [].concat((src.answers || [])[i]).map(idx => (src.right || src.rightShort || [])[idx])));
+    else if (type === 'order') (src.items || []).forEach((row, i) => add(row.cue || i + 1, row.a));
+    else if (type === 'tickfix') (src.items || []).forEach((row, i) => add(i + 1, row.ok ? ['✓ ' + row.s] : row.a));
+    else if (type === 'sort') (src.words || []).forEach(row => add(row.w, [].concat(row.c).map(idx => (src.cats || [])[idx])));
+    else if (type === 'grid') (src.rows || []).forEach(row => add(row.t, (row.a || []).map(idx => (src.cols || [])[idx])));
+    else if (type === 'tapfind') (src.targets || []).forEach((target, i) => add(i + 1, typeof target === 'string' ? target : target.t));
+    else if (type === 'multi') {
+      (src.answers || []).forEach(idx => add(idx + 1, (src.options || [])[idx]));
+      (src.optional || []).forEach(idx => add('Допустимо: ' + (idx + 1), (src.options || [])[idx]));
+    } else if (type === 'open' && src.key) [].concat(src.key).forEach((answer, i) => add(i + 1, answer));
+    return rows;
+  }
+  function teacherAnswerContent(it) {
+    const answers = teacherAnswers(it);
+    const sample = it.sample;
+    const provenance = KEYSRC[it.keySrc] || KEYSRC.own;
+    const modelLabel = sample && sample.src === 'tb' ? 'Образец из Teacher’s Book' : 'Составленный образец — не официальный ключ';
+    return [h('h4', null, 'Ответы для учителя'), h('p', { class: 'small' }, provenance[0]),
+      answers.length ? h('ol', { class: 'teacher-answer-list' }, answers.map(row => h('li', null, h('b', null, row.label + ': '), row.answers.join(' / ')))) : null,
+      sample ? h('div', { class: 'teacher-model' }, h('b', null, modelLabel), h('div', { html: sample.html })) : null,
+      it.type === 'writing' && it.model ? h('div', { class: 'teacher-model' }, h('b', null, 'Образец ответа'), h('div', { html: it.model })) : null,
+      it.type === 'discuss' && it.model ? h('p', null, 'Пример из задания: ' + it.model) : null,
+      it.explanation ? h('div', { class: 'teacher-explanation', html: md(it.explanation) }) : null,
+      !answers.length && !sample && !(it.type === 'writing' && it.model) ? h('p', null, it.mediaRequired || it.keySrc === 'none' ? 'Ответы нельзя установить без отсутствующего аудио или видео. Задание пока не оценивается.' : 'Свободный ответ. Единственного правильного варианта нет; обсудите содержание и язык с учеником.') : null];
+  }
+  // One listener cleans all live panels synchronously when the teacher leaves the mode.
+  document.addEventListener('tutor-mode-changed', event => {
+    if (event.detail && event.detail.on) return;
+    document.querySelectorAll('.teacher-answers').forEach(panel => { panel.hidden = true; panel.replaceChildren(); });
+    document.querySelectorAll('.teacher-answer-toggle').forEach(button => { button.textContent = 'Показать ответы'; button.setAttribute('aria-expanded', 'false'); });
+    document.querySelectorAll('details.tutor-only').forEach(details => { details.open = false; });
+  });
+
   /* ---------- Generic card wrapper ---------- */
   function Box(b) { return h('aside', { class: 'skillbox ' + (b.kind || '') }, h('div', { class: 'sk-t' }, b.title), h('div', { html: b.html })); }
   function Stars(n) { return [1, 2, 3].map(i => h('i', { class: i <= n ? 'on' : null, 'aria-hidden': 'true' }, '★')); }
@@ -87,7 +145,7 @@
       Figures(it.figs),
       it.article ? h('div', { class: 'frame article' }, it.article.title ? h('h4', { class: 'frame-h art-h' }, it.article.title) : null, h('div', { class: 'art-body', html: it.article.html })) : null,
       it.articleRef ? h('details', { class: 'artref' }, h('summary', null, '📄 Текст: ' + it.articleRef.title), h('div', { class: 'frame article' }, h('div', { class: 'art-body', html: it.articleRef.html }))) : null,
-      it.keySrc ? h('p', { class: 'tutor-only keysrc ' + KEYSRC[it.keySrc][1] }, KEYSRC[it.keySrc][0] + (it.keyNote ? ' · ' + it.keyNote : '')) : null,
+      it.keySrc ? h('p', { class: 'tutor-only keysrc ' + (KEYSRC[it.keySrc] || KEYSRC.own)[1] }, (KEYSRC[it.keySrc] || KEYSRC.own)[0] + (it.keyNote ? ' · ' + it.keyNote : '')) : null,
       it.tutorNote ? h('details', { class: 'tutor-only tnote' }, h('summary', null, 'Методическая заметка'), h('div', { html: md(it.tutorNote) })) : null);
 
     const fb = h('div', { class: 'ex-fb', role: 'status', 'aria-live': 'polite' });
@@ -110,7 +168,20 @@
     }, 'Доступно после первой проверки') : null;
     if (reveal) reveal.hidden = !Store.ex(it.id).attempts.length;
     if (api.reset) add('Reset Exercise', 'ghost subtle', async () => { if (await Core.confirmBox('Сбросить упражнение?', 'Ответы этого упражнения будут очищены. Результаты прошлых попыток останутся в истории.', 'Сбросить')) { api.reset(); peeked = false; fb.textContent = ''; fb.className = 'ex-fb'; Store.saveState(it.id, null); } });
-    if (api.key) add('Ключ (учитель)', 'ghost tutor-only', () => api.key(), 'Только в режиме учителя');
+    const teacherPanel = h('aside', { class: 'teacher-answers tutor-only', id: 'teacher-answers-' + it.id, hidden: true, 'aria-label': 'Ответы для учителя' });
+    if (it.type !== 'reference' && it.type !== 'review') {
+      const teacherToggle = add('Показать ответы', 'ghost tutor-only teacher-answer-toggle', () => {
+        if (!Core.Tutor.on()) return;
+        const show = teacherPanel.hidden;
+        teacherPanel.replaceChildren();
+        if (show) teacherPanel.append(...teacherAnswerContent(it).filter(Boolean));
+        teacherPanel.hidden = !show;
+        teacherToggle.textContent = show ? 'Скрыть ответы' : 'Показать ответы';
+        teacherToggle.setAttribute('aria-expanded', String(show));
+      }, 'Только в режиме учителя; ответы ученика сохраняются');
+      teacherToggle.setAttribute('aria-expanded', 'false');
+      teacherToggle.setAttribute('aria-controls', teacherPanel.id);
+    }
     if (api.done) add(api.doneLabel || 'Mark as done', 'ghost', () => { const was = !!Store.ex(it.id).done; api.done(); paintDone(); const now = !!Store.ex(it.id).done; const xp = now && G ? G.exerciseDone(it, !was) : 0; toast(now ? 'Отмечено как выполненное' + (xp ? ' · +' + xp + ' XP' : '') : 'Отмечено как выполненное'); });
 
     function show(r) {
@@ -149,10 +220,10 @@
     const tx = it.type !== 'listen' && it.audio && it.audio.transcript ? Transcript(it.audio) : null;
     const sample = it.sample ? h('details', { class: 'tutor-only model-ans' }, h('summary', null, it.sample.src === 'tb' ? 'Teacher’s Book: suggested answers' : 'Образец ответа — подготовлен для платформы (не из Teacher’s Book)'), h('div', { html: it.sample.html })) : null;
     const after = (it.boxes || []).filter(b => b.after).map(Box);
-    const card = h('article', { class: 'ex', id: 'ex-' + it.id, 'data-id': it.id, 'data-type': it.type }, head, it.type !== 'listen' && it.audio ? AudioPlayer(it.audio) : null, body, tx, after, links, hintBox, explBox, tools, fb, sample, follow, extra,
+    const card = h('article', { class: 'ex', id: 'ex-' + it.id, 'data-id': it.id, 'data-type': it.type }, head, it.type !== 'listen' && it.audio ? AudioPlayer(it.audio) : null, body, tx, after, links, hintBox, explBox, tools, fb, teacherPanel, sample, follow, extra,
       h('div', { class: 'ex-foot' }, ask, h('div', { class: 'tutor-only tc-wrap' }, tcomment)));
 
-    card.addEventListener('focusin', () => { if (card._seen) return; card._seen = true; document.dispatchEvent(new CustomEvent('exercise-focus', { detail: { id: it.id, type: it.type === 'listen' ? (it.inner || {}).type || 'listen' : it.type, listen: it.type === 'listen', hint: !!it.hint } })); });
+    card.addEventListener('focusin', event => { if (Core.Tutor.on() || event.target.closest('.tutor-only') || card._seen) return; card._seen = true; document.dispatchEvent(new CustomEvent('exercise-focus', { detail: { id: it.id, type: it.type === 'listen' ? (it.inner || {}).type || 'listen' : it.type, listen: it.type === 'listen', hint: !!it.hint } })); });
     function paintDone() { const e = Store.ex(it.id); card.classList.toggle('is-done', !!e.done); }
     paintDone();
     card._show = show;
@@ -714,10 +785,25 @@
     return { el, done: () => Store.markDone(it.id), doneLabel: 'План готов ✓', reset: () => tas.forEach(t => t.value = ''), setState: s => { if (Array.isArray(s)) tas.forEach((t, i) => { t.value = s[i] || ''; }); } };
   }
 
+  function PendingContent(it) {
+    const src = it.inner || it;
+    const question = q => typeof q === 'string' ? h('p', { html: md(q) }) : h('div', null,
+      q.q ? h('p', { html: md(q.q) }) : null,
+      q.options ? h('ul', null, q.options.map(option => h('li', { html: md(option) }))) : null);
+    const segment = seg => typeof seg === 'string' ? md(seg) : seg.given != null ? md(String(seg.given)) : seg.br ? '<br>' : seg.sel ? '[' + seg.sel.map(x => md(String(x))).join(' / ') + ']' : ' _____ ';
+    return h('div', { class: 'media-pending' },
+      h('p', null, 'Ожидает исходное медиа. Проверка и начисление прогресса пока недоступны.'),
+      src.heading ? h('h4', null, src.heading) : null,
+      (src.questions || src.prompts || []).map(question),
+      (src.paras || src.passage || []).map(paragraph => h('p', { html: Array.isArray(paragraph) ? paragraph.map(segment).join('') : md(typeof paragraph === 'string' ? paragraph : paragraph.t || '') })),
+      src.options && !src.questions ? h('ul', null, src.options.map(option => h('li', { html: md(option) }))) : null,
+      src.bank ? h('p', null, src.bank.join(' · ')) : null);
+  }
+
   /* =============== Factory =============== */
   const MAP = { sort: Sort, grid: Grid, tickfix: TickFix, draw: Draw, plan: Plan, gaps: Gaps, mcq: MCQ, open: Open, listen: Listen, inline: Inline, underline: Underline, rulebox: RuleBox, match: Match, order: Order, rank: Rank, discuss: Discuss, interview: Interview, writing: Writing, review: Review, tapfind: TapFind, multi: Multi, checklist: Checklist, scores: Scores, reference: Reference };
   function render(it) {
-    if (it.mediaRequired) return Card(it, h('div', { class: 'media-pending' }, (it.questions || it.prompts || []).map(q => h('p', null, q))), {});
+    if (it.mediaRequired) return Card(it, PendingContent(it), {});
     const api = MAP[it.type](it);
     // keyless tutor-scored items get a dedicated button
     const card = Card(it, api.el, api);
@@ -730,5 +816,5 @@
     return card;
   }
 
-  window.Exercises = { render, AudioPlayer };
+  window.Exercises = { render, AudioPlayer, teacherAnswers };
 })();

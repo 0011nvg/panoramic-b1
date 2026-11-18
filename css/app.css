@@ -504,3 +504,14 @@ ol.abc{list-style:none;padding:0;margin:4px 0}ol.abc li{margin:.3em 0}
 /* Original Unit 2 source images and Review score */
 .book-original {margin:16px 0;max-width:100%}.book-original img{display:block;max-width:100%;height:auto}.book-original figcaption{font-size:.8rem;color:var(--mute)}
 .media-missing,.media-pending{padding:14px;background:#fff2d7;border-radius:10px}.review-score{padding:18px;background:var(--yellow);border:2px solid var(--ink);border-radius:14px;font-weight:800;margin:18px 0}
+
+/* Teacher answers are separate from student inputs. */
+.teacher-answers{margin:16px 0;padding:20px;border:2px solid #3D3BFF;border-radius:16px;background:#f2f1ff;color:#20202b;overflow-wrap:anywhere}
+.teacher-answers h4{margin:0 0 12px;font-size:1.05rem}.teacher-answer-list{display:grid;gap:10px;padding-left:24px;margin:12px 0}.teacher-answer-list li{padding-left:4px}.teacher-model{padding:12px 0;border-top:1px solid #c3bfff}.teacher-answer-toggle{min-height:44px}
+.cm-media{display:block;color:#48465c;font-size:.72rem;line-height:1.4;margin-top:5px}.cm-t{min-width:0}.unit-no{overflow-wrap:anywhere}.new-student{font-size:1.35rem;min-width:44px;min-height:44px}
+.book-original{margin:18px 0}.book-original img{display:block;width:100%;height:auto;object-fit:contain;border-radius:12px}.book-original figcaption{font-size:.8rem;color:#454350;padding-top:8px}.media-pending{padding:16px;background:#fff3d1;border-radius:12px;color:#38301c}.next-ex{display:inline-flex;min-height:44px;align-items:center;margin-top:12px;font-weight:700}
+@media(max-width:640px){.teacher-answers{padding:14px}.teacher-answer-list{padding-left:18px}.cm-t{overflow-wrap:anywhere}.hd-r{gap:5px}.lhero .lh-meta{flex-wrap:wrap}}
+
+@media(max-width:640px){.hd-r .xpchip,.hd-r .who,.hd-r button[aria-label="Режим доски"]{display:none}.hdr{gap:8px}.hd-r{margin-left:auto}.brand{flex-shrink:0}.brand small{display:none}.new-student{min-width:40px}.tmode{min-height:44px}}
+
+.hdr .icobtn,.hdr .menu-btn{min-width:44px;min-height:44px}
