@@ -15,7 +15,7 @@
 
   /* ---------- progress maths ---------- */
   function lessonProgress(id) {
-    const items = allItems(id); let done = 0, sc = 0, mx = 0;
+    const items = allItems(id).filter(it => !it.mediaRequired); let done = 0, sc = 0, mx = 0;
     items.forEach(it => { const e = Store.data().ex[it.id]; if (e && e.done) done++; if (e && e.max && gradable(it)) { sc += e.score; mx += e.max; } });
     return { done, total: items.length, pct: Math.round(done / items.length * 100), acc: mx ? Math.round(sc / mx * 100) : null };
   }
@@ -166,8 +166,10 @@
     // reorder nav to page order
     const order = [...body.children].map(c => c.id.replace('sec-', ''));
     navItems.sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+    const reviewScore = id === 'r12-revision' ? h('div', { class: 'review-score', role: 'status', 'aria-live': 'polite' }) : null;
+    const paintReview = () => { if (reviewScore) { const score = L.sections[0].items.reduce((n,it) => n + (Store.ex(it.id).score || 0), 0); reviewScore.textContent = 'Review Units 1–2 · ' + score + ' / 50'; } };
     const pb = h('div', { class: 'lprog' }, h('i', { style: { width: p.pct + '%' } }));
-    const onProg = () => { const q = lessonProgress(id); pb.firstChild.style.width = q.pct + '%'; pl.textContent = q.done + '/' + q.total + ' done' + (q.acc != null ? ' · ' + q.acc + '% correct' : ''); setTimeout(paintMs, 0); };
+    const onProg = () => { paintReview(); const q = lessonProgress(id); pb.firstChild.style.width = q.pct + '%'; pl.textContent = q.done + '/' + q.total + ' done' + (q.acc != null ? ' · ' + q.acc + '% correct' : ''); setTimeout(paintMs, 0); };
     const pl = h('span', { class: 'small' });
     const msBox = h('div', { class: 'missions game' });
     const paintMs = () => { const ms = Game.missions(id); const s2 = Game.lessonStars(id); msBox.innerHTML = '';
@@ -182,7 +184,7 @@
         h('div', { class: 'lh-code' }, L.code),
         h('div', null, h('div', { class: 'eyebrow' }, ulab(unitOf(id)) + (unitOf(id).label ? '' : ' · ' + unitOf(id).title) + ' · ' + L.kicker + ' · p.' + L.pages), h('h1', null, L.title), h('p', { class: 'lead' }, L.goal),
           h('div', { class: 'lh-meta' }, L.time ? h('span', { class: 'chip' }, '⏱ ' + L.time) : null, L.split ? h('span', { class: 'chip tutor-only' }, L.split) : null)), hpano),
-      msBox,
+      msBox, reviewScore,
       h('div', { class: 'lnav' }, h('div', { class: 'lnav-in' }, navItems.map(([sid, t]) => h('a', { href: '#/lesson/' + id + '/@' + sid, 'data-stage': STAGE(sid) }, h('i', null, STAGE(sid)), t))), h('div', { class: 'lnav-p' }, pb, pl)),
       body,
       L.wb ? h('p', { class: 'wbnote' }, h('b', null, 'В учебнике также: '), L.wb.join(' · '), h('span', { class: 'muted' }, ' — Workbook и цифровые материалы в присланные файлы не входили.')) : null,

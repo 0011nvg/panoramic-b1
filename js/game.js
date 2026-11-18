@@ -100,7 +100,7 @@
 
   /* ---------- lesson missions (3 per lesson, built from the lesson’s own content) ---------- */
   function missions(lessonId) {
-    const items = allItems(lessonId); const ex = Store.data().ex;
+    const items = allItems(lessonId).filter(it => !it.mediaRequired); const ex = Store.data().ex;
     const core = items.filter(it => it.core !== false);
     const graded = items.filter(starable);
     const words = VOCAB.filter(v => v.lesson === lessonId);

@@ -7,7 +7,7 @@
    Аудио S.01–S.05 в присланных материалах нет → audio.file не задан, плеер показывает пометку.
    ========================================================= */
 (function () {
-  const A = t => ({ track: t });   // аудио Starter: файла пока нет
+  const A = t => ({ track: t, file: 'audio/starter/' + t + '.mp3' });   // аудио Starter: файла пока нет
   const IMG = 'assets/book/';
 
   const TXT_HABITS = `<p class="lead-in"><b>From using social media to choosing the colour of your clothes, your habits reveal more about your personality than you think. Read on to find out what researchers say.</b></p>

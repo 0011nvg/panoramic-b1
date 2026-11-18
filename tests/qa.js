@@ -26,9 +26,9 @@ const ok = (c, msg) => { if (c) pass++; else { fail++; fails.push(msg); console.
     audio: [...new Set(Object.values(LESSONS).flatMap(L => L.sections.flatMap(s => s.items.filter(i => i.audio && i.audio.file).map(i => i.audio.file))))]
   }));
   ok(info.units >= 11, 'course map lists Starter + 10 units (+ reviews)');
-  ok(['u2', 'u3', 'u4', 'u5', 'u6', 'u7', 'u8', 'u9', 'u10'].every(u => info.soon.includes(u)), 'Units 2–10 are marked soon');
+  ok(['u3', 'u4', 'u5', 'u6', 'u7', 'u8', 'u9', 'u10'].every(u => info.soon.includes(u)), 'Units 3–10 are marked soon');
   const soonCards = await page.$$eval('.cm.soon', els => els.length);
-  ok(soonCards >= 9, 'home shows “Скоро” cards: ' + soonCards);
+  ok(soonCards >= 8, 'home shows “Скоро” cards: ' + soonCards);
   const soonLinks = await page.$$eval('.cm.soon a', els => els.length);
   ok(soonLinks === 0, 'soon units are not links');
 

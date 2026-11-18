@@ -717,6 +717,7 @@
   /* =============== Factory =============== */
   const MAP = { sort: Sort, grid: Grid, tickfix: TickFix, draw: Draw, plan: Plan, gaps: Gaps, mcq: MCQ, open: Open, listen: Listen, inline: Inline, underline: Underline, rulebox: RuleBox, match: Match, order: Order, rank: Rank, discuss: Discuss, interview: Interview, writing: Writing, review: Review, tapfind: TapFind, multi: Multi, checklist: Checklist, scores: Scores, reference: Reference };
   function render(it) {
+    if (it.mediaRequired) return Card(it, h('div', { class: 'media-pending' }, (it.questions || it.prompts || []).map(q => h('p', null, q))), {});
     const api = MAP[it.type](it);
     // keyless tutor-scored items get a dedicated button
     const card = Card(it, api.el, api);

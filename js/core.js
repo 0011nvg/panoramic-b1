@@ -207,7 +207,7 @@
 
   /* ---------- Content index ---------- */
   function allItems(lessonId) { const L = LESSONS[lessonId]; const out = []; L.sections.forEach(s => s.items.forEach(it => out.push(Object.assign({ _section: s.id }, it)))); return out; }
-  function gradable(it) { return !['discuss', 'review', 'rank', 'interview', 'writing', 'reference', 'checklist', 'scores', 'draw', 'plan'].includes(it.type) && !it.free && !(it.inner && it.inner.free); }
+  function gradable(it) { return !it.mediaRequired && !['discuss', 'review', 'rank', 'interview', 'writing', 'reference', 'checklist', 'scores', 'draw', 'plan'].includes(it.type) && !it.free && !(it.inner && it.inner.free); }
 
   window.Core = { LS, Profiles, Store, norm, variants, matches, closeTo, h, esc, md, shuffle, toast, confirmBox, promptBox, download, Tutor, TutorLock, allItems, gradable };
 })();

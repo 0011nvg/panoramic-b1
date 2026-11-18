@@ -2,7 +2,7 @@
    · все файлы, на которые ссылаются index.html и данные (картинки, аудио, скрипты), существуют с точным регистром имени;
    · id заданий уникальны, у каждого задания из учебника есть страница и номер;
    · у заданий с автопроверкой есть ключ, и каждый ключ принимается собственной проверкой (Core.matches);
-   · Unit 2–10 отмечены «скоро» и не содержат уроков. */
+   · Unit 3–10 отмечены «скоро» и не содержат уроков. */
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const ROOT = path.join(__dirname, '..');
 let pass = 0, fail = 0;
@@ -17,13 +17,18 @@ const css = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(m =
 /* minimal DOM-less sandbox: core.js needs document only for helpers we don't call */
 const sandbox = { window: {}, console, document: { addEventListener() {}, documentElement: { classList: { toggle() {} } } }, localStorage: { getItem: () => null, setItem() {}, removeItem() {} }, sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} }, crypto: {}, TextEncoder };
 sandbox.window = sandbox; vm.createContext(sandbox);
-['js/core.js', 'js/course.js', 'js/data-starter.js', 'js/data-unit1.js', 'js/data-review.js', 'js/data-vocab.js', 'js/data-visuals.js'].forEach(f => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), sandbox, { filename: f }));
+['js/core.js', 'js/course.js', 'js/data-starter.js', 'js/data-unit1.js', 'js/data-unit2.js', 'js/data-review12.js', 'js/content-unit2.js', 'js/data-review.js', 'js/data-vocab.js', 'js/data-visuals.js'].forEach(f => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), sandbox, { filename: f }));
 const { BOOK, LESSONS, VOCAB, VISUALS, Core } = sandbox;
 
 ok(BOOK.units.filter(u => !u.review).length === 11, 'Starter + 10 units in the course map');
 BOOK.units.filter(u => u.soon).forEach(u => ok(u.lessons.length === 0, u.id + ' (soon) has no lessons'));
 BOOK.units.filter(u => u.ready).forEach(u => u.lessons.forEach(id => ok(!!LESSONS[id], 'lesson exists: ' + id)));
 
+ok(BOOK.units.find(u => u.id === 'u2').ready && BOOK.units.find(u => u.id === 'r12').ready, 'Unit 2 and Review are ready');
+const review = LESSONS['r12-revision'].sections[0].items;
+ok(review.reduce((n,it) => n + it.paras.flat().filter(x => x && typeof x === 'object' && x.a).length, 0) === 50, 'Review has exactly 50 marks');
+const videos = Object.values(LESSONS).flatMap(l=>l.sections.flatMap(s=>s.items)).filter(it=>it.mediaRequired);
+ok(videos.length === 2 && videos.every(it=>!Core.gradable(it) && it.core === false), 'two missing-video tasks are excluded from scoring');
 const ids = new Set(); const files = new Set();
 const grab = o => { if (!o || typeof o !== 'object') return; for (const k in o) { const v = o[k]; if (typeof v === 'string' && /^(assets|audio)\//.test(v)) files.add(v.split('#')[0]); else if (typeof v === 'object') grab(v); } };
 Object.values(LESSONS).forEach(L => L.sections.forEach(s => s.items.forEach(it => {
@@ -33,7 +38,7 @@ Object.values(LESSONS).forEach(L => L.sections.forEach(s => s.items.forEach(it =
   const src = it.type === 'listen' ? it.inner : it;
   const t = src.type || it.type;
   if (t === 'gaps') src.paras.flat().filter(x => x && typeof x === 'object' && !x.open && !x.given && !x.br).forEach((g, i) => {
-    if (g.sel) ok(g.sel.includes(g.a), `${it.id} select ${i + 1}: key is one of the options`);
+    if (g.sel) ok([].concat(g.a).every(a => g.sel.includes(a)), `${it.id} select ${i + 1}: key is one of the options`);
     else ok(g.a && g.a.length && g.a.every(a => Core.matches(a, g.a)), `${it.id} gap ${i + 1}: key accepted`);
   });
   if (t === 'mcq') src.questions.forEach((q, i) => ok(Number.isInteger(q.a) && q.a >= 0 && q.a < q.options.length, `${it.id} q${i + 1}: key index`));

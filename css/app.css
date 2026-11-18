@@ -500,3 +500,7 @@ ol.abc{list-style:none;padding:0;margin:4px 0}ol.abc li{margin:.3em 0}
 .glines.cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:2px 18px}.glines.cols .gline{margin:4px 0}
 .gsel{max-width:100%}
 @media (max-width:520px){.gx{width:34px;height:36px}.gridx{border-spacing:3px;font-size:.85rem}.gridx th[scope=row]{min-width:96px}}
+
+/* Original Unit 2 source images and Review score */
+.book-original {margin:16px 0;max-width:100%}.book-original img{display:block;max-width:100%;height:auto}.book-original figcaption{font-size:.8rem;color:var(--mute)}
+.media-missing,.media-pending{padding:14px;background:#fff2d7;border-radius:10px}.review-score{padding:18px;background:var(--yellow);border:2px solid var(--ink);border-radius:14px;font-weight:800;margin:18px 0}

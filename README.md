@@ -3,7 +3,8 @@
 Интерактивная платформа по учебнику **Optimise Stars B1** (Student’s Book). Статический сайт для GitHub Pages: без сервера, без сборки, все пути относительные.
 
 **Готово полностью:** Starter (pp. 6–9) и Unit 1 “How we live” (pp. 10–19) + связанные страницы Grammar reference (pp. 136–138), Vocabulary reference (pp. 150–151), Writing reference (p. 159), Speaking reference (p. 164).
-**Скоро:** Unit 2 – Unit 10 и Review-разделы — видны на карте курса с пометкой «Скоро», без уроков и заданий.
+**Добавлено:** Unit 2 “Around the world” (pp. 20–29), все 8 уроков, и Review Units 1–2 (pp. 30–31): 9 упражнений на 50 баллов, Well-being и Action plan.
+**Скоро:** Unit 3–10 и соответствующие Review-разделы.
 
 ## Публикация
 Settings → Pages → *Deploy from a branch* → `main` / `(root)`. Через 1–2 минуты сайт будет по адресу `https://0011nvg.github.io/panoramic-b1/`.
@@ -17,7 +18,7 @@ Settings → Pages → *Deploy from a branch* → `main` / `(root)`. Через 
 - **Свободные ответы** (устные задания, письмо, «true for you») система не проверяет: ученик отмечает выполнение, учитель видит образцы.
 - **Аудио:** плеер с паузой, перемоткой ±5 с, ползунком и скоростью 0.75–1.25×.
 - **Картинки учебника** рядом с заданиями, увеличиваются по нажатию; на картинке дома (p. 13) — номера ярлыков.
-- **Словарь** (74 слова Starter и Unit 1) — карточки, Learn with Keks, интервальное повторение, сложные слова.
+- **Словарь** (92 слова Starter, Unit 1 и Unit 2) — карточки, Learn with Keks, интервальное повторение, сложные слова.
 - **Прогресс, звёзды, XP, миссии уроков, самооценка «Can do?»**, работа над ошибками.
 
 ## Режим учителя
@@ -27,15 +28,16 @@ Settings → Pages → *Deploy from a branch* → `main` / `(root)`. Через 
 
 ## Источники ключей
 На каждой карточке в режиме учителя:
-- **Ключ: Teacher’s Book** — ответ из присланного Teacher’s Book (Starter, Unit 1);
+- **Ключ: Teacher’s Book** — ответ из присланного Teacher’s Book (Starter, Units 1–2, Review);
 - **Teacher’s Book (suggested answers)** — в книге ответ дан как «suggested»;
 - **подготовлен для платформы** — ответ составлен по тексту/фото (не официальный): образец абзаца Starter Ex. 3, образец статьи Unit 1 Ex. 7, ответ к Speaking Ex. 5;
 - **свободные ответы** — в Teacher’s Book «Students’ own answers».
 
 ## Аудио
 `audio/u1/1.01.mp3 … 1.06.mp3` — дорожки Unit 1 (присланные файлы `OPT2E_SB_B1_TRACK_1_01…06`, сверены по содержанию; перекодированы в 96 kbps mono для мобильного интернета).
-Дорожки `TRACK_2_01…07` — это Unit 2 (2.01–2.07); подключатся вместе с Unit 2.
-**Нет файлов Starter S.01–S.05** — задания работают, плеер показывает пометку. Чтобы подключить: положите файлы в `audio/starter/` под именами `S.01.mp3 … S.05.mp3` и в начале `js/data-starter.js` замените строку `const A = t => ({ track: t });` на `const A = t => ({ track: t, file: 'audio/starter/' + t + '.mp3' });`.
+`audio/starter/S.01.mp3 … S.05.mp3` — все пять записей Starter из присланного архива.
+`audio/u2/2.01.mp3 … 2.08.mp3` — все восемь присланных дорожек Unit 2 и Review (96 kbps mono).
+Всего 19 аудиофайлов. Два упражнения Speaking Unit 2 (p. 26, Ex. 1–2) требуют отсутствующего видео: помечены, не проверяются и не засчитываются в прогресс или награды.
 
 ## Структура
 ```
@@ -45,14 +47,17 @@ js/core.js               хранилище, профили, проверка о
 js/course.js             структура всего курса (Starter + Units 1–10 + Review), статусы ready / soon
 js/data-starter.js       Starter: уроки S1–S4 + SR (reference)
 js/data-unit1.js         Unit 1: уроки 1.1–1.8 + 1R (reference)
+js/data-unit2.js         Unit 2: восемь уроков со всеми исходными заданиями
+js/data-review12.js      Review 1–2: 50 баллов, Well-being, Action plan
+js/content-unit2.js      источники ключей и метаданные Unit 2 / Review
 js/data-review.js        самооценка в конце уроков (добавлено)
-js/data-vocab.js         словарь Starter и Unit 1
+js/data-vocab.js         словарь Starter, Unit 1 и Unit 2
 js/data-visuals.js       фото в шапках уроков и на обложках разделов
 js/exercises.js          движок заданий
 js/vocab.js, game.js, keks.js, pics.js, app.js   тренажёр слов, игровой слой, Кекс, картинки, страницы
 assets/book/             фрагменты страниц Student’s Book (WebP)
 assets/3d/               3D-значки Microsoft Fluent Emoji (MIT)
-audio/u1/                аудио Unit 1
+audio/starter/, u1/, u2/ аудио Starter, Units 1–2 и Review
 tests/static.js          быстрая проверка данных и файлов (node)
 tests/qa.js              проверка в браузере на 375 / 820 / 1366 px (Playwright)
 tools/teacher-code.*     смена кода учителя

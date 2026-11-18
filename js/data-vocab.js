@@ -87,3 +87,259 @@ window.VOCAB = [
   // ---- Unit 1 · Language in Use (p. 17)
   { w: 'houseboat', ru: 'плавучий дом', ipa: '/ˈhaʊsbəʊt/', pos: 'n', def: 'a boat that people live in', ex: 'Sara is 14 and lives on a houseboat in London with her parents.', ctx: ['They live on a ___ on the canal.'], lesson: 'u1-7', src: 'book', emoji: '⛵' }
 ];
+
+/* Unit 2 textbook vocabulary; Russian glosses and examples are platform support. */
+for (const v of [
+  {
+    "w": "camping trip",
+    "ru": "поход с ночёвкой в палатке",
+    "ipa": "",
+    "pos": "n",
+    "def": "поход с ночёвкой в палатке",
+    "ex": "We went on a camping trip in the mountains.",
+    "ctx": [
+      "We went on a ___ in the mountains."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "school trip",
+    "ru": "школьная поездка",
+    "ipa": "",
+    "pos": "n",
+    "def": "школьная поездка",
+    "ex": "Our class went on a school trip to the museum.",
+    "ctx": [
+      "Our class went on a ___ to the museum."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "package holiday",
+    "ru": "пакетный тур",
+    "ipa": "",
+    "pos": "n",
+    "def": "пакетный тур",
+    "ex": "Our package holiday includes flights and a hotel.",
+    "ctx": [
+      "Our ___ includes flights and a hotel."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "cruise",
+    "ru": "круиз",
+    "ipa": "",
+    "pos": "n",
+    "def": "круиз",
+    "ex": "We went on a cruise around the islands.",
+    "ctx": [
+      "We went on a ___ around the islands."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "guided tour",
+    "ru": "экскурсия с гидом",
+    "ipa": "",
+    "pos": "n",
+    "def": "экскурсия с гидом",
+    "ex": "We took a guided tour of the old town.",
+    "ctx": [
+      "We took a ___ of the old town."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "business trip",
+    "ru": "командировка",
+    "ipa": "",
+    "pos": "n",
+    "def": "командировка",
+    "ex": "My mum is on a business trip this week.",
+    "ctx": [
+      "My mum is on a ___ this week."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "backpacker",
+    "ru": "турист с рюкзаком",
+    "ipa": "",
+    "pos": "n",
+    "def": "турист с рюкзаком",
+    "ex": "The backpacker stayed in a cheap hostel.",
+    "ctx": [
+      "The ___ stayed in a cheap hostel."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "campsite",
+    "ru": "кемпинг",
+    "ipa": "",
+    "pos": "n",
+    "def": "кемпинг",
+    "ex": "We put our tent up at the campsite.",
+    "ctx": [
+      "We put our tent up at the ___."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "currency",
+    "ru": "валюта",
+    "ipa": "",
+    "pos": "n",
+    "def": "валюта",
+    "ex": "What currency do people use in Japan?",
+    "ctx": [
+      "What ___ do people use in Japan?"
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "guest",
+    "ru": "гость",
+    "ipa": "",
+    "pos": "n",
+    "def": "гость",
+    "ex": "Each guest receives a room key.",
+    "ctx": [
+      "Each ___ receives a room key."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "guidebook",
+    "ru": "путеводитель",
+    "ipa": "",
+    "pos": "n",
+    "def": "путеводитель",
+    "ex": "Our guidebook lists the best places to visit.",
+    "ctx": [
+      "Our ___ lists the best places to visit."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "hostel",
+    "ru": "хостел",
+    "ipa": "",
+    "pos": "n",
+    "def": "хостел",
+    "ex": "We booked two beds in a hostel.",
+    "ctx": [
+      "We booked two beds in a ___."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "luggage",
+    "ru": "багаж",
+    "ipa": "",
+    "pos": "n",
+    "def": "багаж",
+    "ex": "Please keep your luggage with you.",
+    "ctx": [
+      "Please keep your ___ with you."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "passport",
+    "ru": "паспорт",
+    "ipa": "",
+    "pos": "n",
+    "def": "паспорт",
+    "ex": "Show your passport at the border.",
+    "ctx": [
+      "Show your ___ at the border."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "resort",
+    "ru": "курорт",
+    "ipa": "",
+    "pos": "n",
+    "def": "курорт",
+    "ex": "The beach resort has two swimming pools.",
+    "ctx": [
+      "The beach ___ has two swimming pools."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "sightseer",
+    "ru": "турист, осматривающий достопримечательности",
+    "ipa": "",
+    "pos": "n",
+    "def": "турист, осматривающий достопримечательности",
+    "ex": "The sightseer photographed the palace.",
+    "ctx": [
+      "The ___ photographed the palace."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "tour guide",
+    "ru": "экскурсовод",
+    "ipa": "",
+    "pos": "n",
+    "def": "экскурсовод",
+    "ex": "The tour guide explained the history of the castle.",
+    "ctx": [
+      "The ___ explained the history of the castle."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  },
+  {
+    "w": "tourist",
+    "ru": "турист",
+    "ipa": "",
+    "pos": "n",
+    "def": "турист",
+    "ex": "A tourist asked me how to get to the museum.",
+    "ctx": [
+      "A ___ asked me how to get to the museum."
+    ],
+    "lesson": "u2-vocabulary",
+    "src": "book",
+    "emoji": "🌍"
+  }
+]) { if (!VOCAB.some(old => old.w === v.w)) VOCAB.push(v); }
