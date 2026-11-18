@@ -515,3 +515,7 @@ ol.abc{list-style:none;padding:0;margin:4px 0}ol.abc li{margin:.3em 0}
 @media(max-width:640px){.hd-r .xpchip,.hd-r .who,.hd-r button[aria-label="Режим доски"]{display:none}.hdr{gap:8px}.hd-r{margin-left:auto}.brand{flex-shrink:0}.brand small{display:none}.new-student{min-width:40px}.tmode{min-height:44px}}
 
 .hdr .icobtn,.hdr .menu-btn{min-width:44px;min-height:44px}
+
+/* Long category labels remain usable on narrow screens. */
+.match-row{min-width:0;max-width:100%}.match-row .sel{min-width:0;max-width:100%}
+@media(max-width:600px){.match-row{flex-direction:column;align-items:stretch;gap:8px}.match-row .sel{width:100%;max-width:100%}.match-row>span{overflow-wrap:anywhere}}
